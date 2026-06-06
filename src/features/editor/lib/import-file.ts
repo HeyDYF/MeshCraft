@@ -30,3 +30,21 @@ export function getDragOverlayMessage(isSupported: boolean) {
     ? "Drop GLB / glTF to import"
     : "Only .glb and .gltf files are supported";
 }
+
+export function readFileAsDataUrl(file: Blob) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        resolve(reader.result);
+        return;
+      }
+
+      reject(new Error("Failed to serialize file"));
+    };
+    reader.onerror = () => {
+      reject(reader.error ?? new Error("Failed to read file"));
+    };
+    reader.readAsDataURL(file);
+  });
+}

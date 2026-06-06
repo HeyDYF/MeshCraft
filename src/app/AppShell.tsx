@@ -4,6 +4,7 @@ import {
   getDragOverlayMessage,
   isSupportedImportFile,
   pickImportFile,
+  readFileAsDataUrl,
 } from "../features/editor/lib/import-file";
 import { TRANSFORM_TOOLS } from "../features/editor/lib/transform-tool";
 import { InspectorPanel } from "../features/editor/components/InspectorPanel";
@@ -48,7 +49,7 @@ export function AppShell() {
     setDragActive(false);
   }
 
-  function handleDrop(event: DragEvent<HTMLDivElement>) {
+  async function handleDrop(event: DragEvent<HTMLDivElement>) {
     event.preventDefault();
     setDragActive(false);
 
@@ -65,8 +66,12 @@ export function AppShell() {
       return;
     }
 
-    const objectUrl = URL.createObjectURL(nextFile);
-    setImportedAsset(nextFile.name, objectUrl);
+    try {
+      const dataUrl = await readFileAsDataUrl(nextFile);
+      setImportedAsset(nextFile.name, dataUrl);
+    } catch {
+      setImportStatus("error", "Failed to read import file");
+    }
   }
 
   return (

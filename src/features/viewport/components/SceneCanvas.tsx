@@ -166,14 +166,40 @@ export function SceneCanvas() {
             },
             objectMapRef.current,
           );
+          const extractedBindings = extractImportedMaterialBindings(nextScene);
+          const persistedState = useEditorStore.getState();
+          const mergedImportedMaterialLibrary = {
+            ...extractedBindings.materialLibrary,
+          };
+          Object.entries(persistedState.importedMaterialLibrary).forEach(
+            ([materialId, materialState]) => {
+              if (materialId in mergedImportedMaterialLibrary) {
+                mergedImportedMaterialLibrary[materialId] = materialState;
+              }
+            },
+          );
+          const mergedImportedTransforms = {
+            ...importedTransforms,
+          };
+          Object.entries(persistedState.importedObjectTransforms).forEach(
+            ([objectId, transformState]) => {
+              if (objectId in mergedImportedTransforms) {
+                mergedImportedTransforms[objectId] = transformState;
+              }
+            },
+          );
 
           updatePerformance({
             triangles: metrics.triangles,
             decodeTimeMs: performance.now() - startedAt,
           });
           setImportStatus("ready");
-          setImportedMaterialBindings(extractImportedMaterialBindings(nextScene));
-          setImportedObjectTransforms(importedTransforms);
+          setImportedMaterialBindings({
+            materialLibrary: mergedImportedMaterialLibrary,
+            nodeMaterialBindings: extractedBindings.nodeMaterialBindings,
+            materialTextureSlots: extractedBindings.materialTextureSlots,
+          });
+          setImportedObjectTransforms(mergedImportedTransforms);
           setSceneTree(
             buildImportedSceneTree(
               nextScene,

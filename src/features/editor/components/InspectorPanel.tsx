@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useRef, useState, type ChangeEvent, type ReactNode } from "react";
 import { getSelectionCapabilities } from "../lib/editor-bindings";
+import { readFileAsDataUrl } from "../lib/import-file";
 import { isSupportedTextureFile } from "../lib/texture-overrides";
 import { useEditorStore } from "../store/editor-store";
 import type {
@@ -321,10 +322,10 @@ function TextureSlotsSection({
             return;
           }
 
-          const objectUrl = URL.createObjectURL(file);
+          const dataUrl = await readFileAsDataUrl(file);
           setImportedTextureOverride(activeMaterialId, slot.channel, {
             name: file.name,
-            objectUrl,
+            objectUrl: dataUrl,
           } satisfies MaterialTextureOverride);
           event.target.value = "";
         }

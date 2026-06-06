@@ -348,8 +348,6 @@ export const useEditorStore = create<EditorState>((set) => ({
 
       return {
         ...applied,
-        sceneTree: SCENE_TREE,
-        importedMaterialTextureOverrides: {},
       };
     }),
   requestSceneExport: () =>

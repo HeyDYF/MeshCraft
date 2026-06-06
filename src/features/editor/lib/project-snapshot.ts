@@ -6,8 +6,12 @@ import type {
   DisplayState,
   EditorMode,
   MaterialState,
+  MaterialTextureOverride,
+  MaterialTextureSlot,
+  SceneNode,
   TransformState,
 } from "../types";
+import { SCENE_TREE } from "../types";
 
 export const PROJECT_SNAPSHOT_VERSION = 1;
 
@@ -21,6 +25,13 @@ export type ProjectSnapshot = {
   objectTransforms: Record<string, TransformState>;
   display: DisplayState;
   importedAssetName: string | null;
+  importedAssetUrl: string | null;
+  importedMaterialLibrary: Record<string, MaterialState>;
+  importedNodeMaterialBindings: Record<string, string>;
+  importedMaterialTextureSlots: Record<string, MaterialTextureSlot[]>;
+  importedMaterialTextureOverrides: Record<string, Record<string, MaterialTextureOverride>>;
+  importedObjectTransforms: Record<string, TransformState>;
+  sceneTree: SceneNode;
 };
 
 type SnapshotInput = Omit<ProjectSnapshot, "version">;
@@ -47,30 +58,39 @@ export function parseProjectSnapshot(json: string): ProjectSnapshot {
 }
 
 export function applyProjectSnapshot(snapshot: ProjectSnapshot) {
+  const importedMaterialLibrary = snapshot.importedMaterialLibrary ?? {};
+  const importedObjectTransforms = snapshot.importedObjectTransforms ?? {};
+  const importedNodeMaterialBindings = snapshot.importedNodeMaterialBindings ?? {};
   const selectedId =
     snapshot.selectedId in snapshot.objectTransforms ||
-    snapshot.selectedId in snapshot.materialLibrary
+    snapshot.selectedId in snapshot.materialLibrary ||
+    snapshot.selectedId in importedObjectTransforms ||
+    snapshot.selectedId in importedMaterialLibrary
       ? snapshot.selectedId
       : "mesh-core";
   const selectedName =
     selectedId === snapshot.selectedId ? snapshot.selectedName : "Core_Rotor";
 
-  const importStatus: ImportStatus = snapshot.importedAssetName ? "error" : "idle";
+  const importStatus: ImportStatus = snapshot.importedAssetUrl ? "loading" : "idle";
 
   return {
     mode: snapshot.mode,
     selectedId,
     selectedName,
-    activeMaterialId: getMaterialBindingForSelection(selectedId),
+    activeMaterialId:
+      getMaterialBindingForSelection(selectedId) ??
+      importedNodeMaterialBindings[selectedId] ??
+      (selectedId in importedMaterialLibrary ? selectedId : null),
     materialLibrary: snapshot.materialLibrary ?? DEFAULT_MATERIAL_LIBRARY,
     objectTransforms: snapshot.objectTransforms ?? DEFAULT_PROCEDURAL_TRANSFORMS,
-    importedAssetName: null,
-    importedAssetUrl: null,
-    importedMaterialLibrary: {},
-    importedNodeMaterialBindings: {},
-    importedMaterialTextureSlots: {},
-    importedObjectTransforms: {},
-    sceneTree: undefined,
+    importedAssetName: snapshot.importedAssetName ?? null,
+    importedAssetUrl: snapshot.importedAssetUrl ?? null,
+    importedMaterialLibrary,
+    importedNodeMaterialBindings,
+    importedMaterialTextureSlots: snapshot.importedMaterialTextureSlots ?? {},
+    importedMaterialTextureOverrides: snapshot.importedMaterialTextureOverrides ?? {},
+    importedObjectTransforms,
+    sceneTree: snapshot.sceneTree ?? SCENE_TREE,
     transformTool: coerceTransformTool(snapshot.transformTool ?? DEFAULT_TRANSFORM_TOOL),
     transform: getSelectedTransform(
       selectedId,
@@ -78,8 +98,6 @@ export function applyProjectSnapshot(snapshot: ProjectSnapshot) {
     ),
     display: snapshot.display,
     importStatus,
-    importError: snapshot.importedAssetName
-      ? `Re-import ${snapshot.importedAssetName} to restore external asset content`
-      : null,
+    importError: null,
   };
 }

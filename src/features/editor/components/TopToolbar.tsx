@@ -11,7 +11,7 @@ import {
   Upload,
 } from "lucide-react";
 import { useRef, type ChangeEvent } from "react";
-import { isSupportedImportFile } from "../lib/import-file";
+import { isSupportedImportFile, readFileAsDataUrl } from "../lib/import-file";
 import { describeImportStatus } from "../lib/import-status";
 import {
   createProjectSnapshot,
@@ -31,6 +31,7 @@ export function TopToolbar() {
   const mode = useEditorStore((state) => state.mode);
   const fps = useEditorStore((state) => state.performance.fps);
   const importedAssetName = useEditorStore((state) => state.importedAssetName);
+  const importedAssetUrl = useEditorStore((state) => state.importedAssetUrl);
   const importStatus = useEditorStore((state) => state.importStatus);
   const importError = useEditorStore((state) => state.importError);
   const setMode = useEditorStore((state) => state.setMode);
@@ -44,6 +45,20 @@ export function TopToolbar() {
   const transformTool = useEditorStore((state) => state.transformTool);
   const materialLibrary = useEditorStore((state) => state.materialLibrary);
   const objectTransforms = useEditorStore((state) => state.objectTransforms);
+  const importedMaterialLibrary = useEditorStore((state) => state.importedMaterialLibrary);
+  const importedNodeMaterialBindings = useEditorStore(
+    (state) => state.importedNodeMaterialBindings,
+  );
+  const importedMaterialTextureSlots = useEditorStore(
+    (state) => state.importedMaterialTextureSlots,
+  );
+  const importedMaterialTextureOverrides = useEditorStore(
+    (state) => state.importedMaterialTextureOverrides,
+  );
+  const importedObjectTransforms = useEditorStore(
+    (state) => state.importedObjectTransforms,
+  );
+  const sceneTree = useEditorStore((state) => state.sceneTree);
   const display = useEditorStore((state) => state.display);
   const inputRef = useRef<HTMLInputElement>(null);
   const projectInputRef = useRef<HTMLInputElement>(null);
@@ -71,6 +86,13 @@ export function TopToolbar() {
       objectTransforms,
       display,
       importedAssetName,
+      importedAssetUrl,
+      importedMaterialLibrary,
+      importedNodeMaterialBindings,
+      importedMaterialTextureSlots,
+      importedMaterialTextureOverrides,
+      importedObjectTransforms,
+      sceneTree,
     });
     const blob = new Blob([JSON.stringify(snapshot, null, 2)], {
       type: "application/json",
@@ -83,7 +105,7 @@ export function TopToolbar() {
     URL.revokeObjectURL(objectUrl);
   }
 
-  function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
+  async function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
 
     if (!file) {
@@ -96,9 +118,14 @@ export function TopToolbar() {
       return;
     }
 
-    const objectUrl = URL.createObjectURL(file);
-    setImportedAsset(file.name, objectUrl);
-    event.target.value = "";
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      setImportedAsset(file.name, dataUrl);
+    } catch {
+      setImportStatus("error", "Failed to read import file");
+    } finally {
+      event.target.value = "";
+    }
   }
 
   async function handleProjectFileChange(event: ChangeEvent<HTMLInputElement>) {
