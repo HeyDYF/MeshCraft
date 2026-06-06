@@ -1,5 +1,5 @@
 import { Move3D, RotateCw, Scaling, Upload } from "lucide-react";
-import { useState, type DragEvent } from "react";
+import { useEffect, useState, type DragEvent } from "react";
 import {
   getDragOverlayMessage,
   isSupportedImportFile,
@@ -25,11 +25,28 @@ export function AppShell() {
   const selectedName = useEditorStore((state) => state.selectedName);
   const shading = useEditorStore((state) => state.display.shading);
   const transformTool = useEditorStore((state) => state.transformTool);
+  const hasUnsavedChanges = useEditorStore((state) => state.hasUnsavedChanges);
   const setImportedAsset = useEditorStore((state) => state.setImportedAsset);
   const setImportStatus = useEditorStore((state) => state.setImportStatus);
   const setTransformTool = useEditorStore((state) => state.setTransformTool);
   const [dragActive, setDragActive] = useState(false);
   const [dragAcceptsFile, setDragAcceptsFile] = useState(true);
+
+  useEffect(() => {
+    function handleBeforeUnload(event: BeforeUnloadEvent) {
+      if (!hasUnsavedChanges) {
+        return;
+      }
+
+      event.preventDefault();
+      event.returnValue = "";
+    }
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [hasUnsavedChanges]);
 
   function handleDragOver(event: DragEvent<HTMLDivElement>) {
     event.preventDefault();

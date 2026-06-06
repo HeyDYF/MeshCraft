@@ -37,6 +37,27 @@ import { SCENE_TREE } from "../types";
 type Axis = keyof TransformState["position"];
 type TransformGroup = keyof TransformState;
 
+const DEFAULT_DISPLAY: DisplayState = {
+  shading: "shaded",
+  showGrid: true,
+  showGizmo: true,
+  showScatterField: true,
+  showHologramScan: true,
+  showShadows: true,
+  postFx: true,
+  autoRotate: true,
+  lodPreview: false,
+};
+
+const DEFAULT_PERFORMANCE: PerformanceStats = {
+  fps: 60,
+  triangles: 342156,
+  drawCalls: 18,
+  gpuMemoryMb: 284,
+  decodeTimeMs: 11.8,
+  instances: SCATTER_FIELD_INSTANCE_COUNT,
+};
+
 function revokeTextureOverrides(
   overrides: Record<string, Record<string, MaterialTextureOverride>>,
 ) {
@@ -69,6 +90,7 @@ type EditorState = {
   display: DisplayState;
   performance: PerformanceStats;
   exportRequestNonce: number;
+  hasUnsavedChanges: boolean;
   setMode: (mode: EditorMode) => void;
   setSelected: (id: string, name: string) => void;
   setImportedAsset: (name: string, url: string) => void;
@@ -97,6 +119,8 @@ type EditorState = {
   setShading: (shading: ShadingMode) => void;
   updatePerformance: (performance: Partial<PerformanceStats>) => void;
   applyProjectSnapshot: (snapshot: ProjectSnapshot) => void;
+  markProjectSaved: () => void;
+  resetProject: () => void;
   requestSceneExport: () => void;
 };
 
@@ -119,27 +143,11 @@ export const useEditorStore = create<EditorState>((set) => ({
   sceneTree: SCENE_TREE,
   transformTool: DEFAULT_TRANSFORM_TOOL,
   transform: getSelectedTransform("mesh-core", DEFAULT_PROCEDURAL_TRANSFORMS),
-  display: {
-    shading: "shaded",
-    showGrid: true,
-    showGizmo: true,
-    showScatterField: true,
-    showHologramScan: true,
-    showShadows: true,
-    postFx: true,
-    autoRotate: true,
-    lodPreview: false,
-  },
-  performance: {
-    fps: 60,
-    triangles: 342156,
-    drawCalls: 18,
-    gpuMemoryMb: 284,
-    decodeTimeMs: 11.8,
-    instances: SCATTER_FIELD_INSTANCE_COUNT,
-  },
+  display: DEFAULT_DISPLAY,
+  performance: DEFAULT_PERFORMANCE,
   exportRequestNonce: 0,
-  setMode: (mode) => set({ mode }),
+  hasUnsavedChanges: false,
+  setMode: (mode) => set({ mode, hasUnsavedChanges: true }),
   setSelected: (id, name) =>
     set((state) => ({
       selectedId: id,
@@ -177,6 +185,7 @@ export const useEditorStore = create<EditorState>((set) => ({
           ...state.performance,
           decodeTimeMs: 0,
         },
+        hasUnsavedChanges: true,
       };
     }),
   clearImportedAsset: () =>
@@ -204,6 +213,7 @@ export const useEditorStore = create<EditorState>((set) => ({
         selectedId: "mesh-core",
         selectedName: "Core_Rotor",
         transform: getSelectedTransform("mesh-core", DEFAULT_PROCEDURAL_TRANSFORMS),
+        hasUnsavedChanges: true,
       };
     }),
   setImportStatus: (status, errorMessage = null) =>
@@ -235,6 +245,7 @@ export const useEditorStore = create<EditorState>((set) => ({
           channel,
           override,
         ),
+        hasUnsavedChanges: true,
       };
     }),
   clearImportedTextureOverride: (materialId, channel) =>
@@ -250,12 +261,13 @@ export const useEditorStore = create<EditorState>((set) => ({
           materialId,
           channel,
         ),
+        hasUnsavedChanges: true,
       };
     }),
   setSceneTree: (sceneTree) => set({ sceneTree }),
   setImportedObjectTransforms: (importedObjectTransforms) =>
     set({ importedObjectTransforms }),
-  setTransformTool: (transformTool) => set({ transformTool }),
+  setTransformTool: (transformTool) => set({ transformTool, hasUnsavedChanges: true }),
   setTransform: (transform) =>
     set((state) => {
       const updated = updateSelectionTransformMaps(
@@ -269,6 +281,7 @@ export const useEditorStore = create<EditorState>((set) => ({
         transform,
         objectTransforms: updated.proceduralTransforms,
         importedObjectTransforms: updated.importedTransforms,
+        hasUnsavedChanges: true,
       };
     }),
   setTransformAxis: (group, axis, value) =>
@@ -291,6 +304,7 @@ export const useEditorStore = create<EditorState>((set) => ({
         transform: nextTransform,
         objectTransforms: updated.proceduralTransforms,
         importedObjectTransforms: updated.importedTransforms,
+        hasUnsavedChanges: true,
       };
     }),
   setMaterialField: (key, value) =>
@@ -315,6 +329,7 @@ export const useEditorStore = create<EditorState>((set) => ({
               },
             }
           : state.importedMaterialLibrary,
+      hasUnsavedChanges: true,
     })),
   setDisplayField: (key, value) =>
     set((state) => ({
@@ -322,6 +337,7 @@ export const useEditorStore = create<EditorState>((set) => ({
         ...state.display,
         [key]: value,
       },
+      hasUnsavedChanges: true,
     })),
   setShading: (shading) =>
     set((state) => ({
@@ -329,6 +345,7 @@ export const useEditorStore = create<EditorState>((set) => ({
         ...state.display,
         shading,
       },
+      hasUnsavedChanges: true,
     })),
   updatePerformance: (performance) =>
     set((state) => ({
@@ -348,6 +365,39 @@ export const useEditorStore = create<EditorState>((set) => ({
 
       return {
         ...applied,
+        hasUnsavedChanges: false,
+      };
+    }),
+  markProjectSaved: () => set({ hasUnsavedChanges: false }),
+  resetProject: () =>
+    set((state) => {
+      if (state.importedAssetUrl) {
+        URL.revokeObjectURL(state.importedAssetUrl);
+      }
+      revokeTextureOverrides(state.importedMaterialTextureOverrides);
+
+      return {
+        mode: "object",
+        selectedId: "mesh-core",
+        selectedName: "Core_Rotor",
+        importedAssetName: null,
+        importedAssetUrl: null,
+        importStatus: "idle",
+        importError: null,
+        activeMaterialId: getMaterialBindingForSelection("mesh-core"),
+        materialLibrary: DEFAULT_MATERIAL_LIBRARY,
+        importedMaterialLibrary: {},
+        importedNodeMaterialBindings: {},
+        importedMaterialTextureSlots: {},
+        importedMaterialTextureOverrides: {},
+        objectTransforms: DEFAULT_PROCEDURAL_TRANSFORMS,
+        importedObjectTransforms: {},
+        sceneTree: SCENE_TREE,
+        transformTool: DEFAULT_TRANSFORM_TOOL,
+        transform: getSelectedTransform("mesh-core", DEFAULT_PROCEDURAL_TRANSFORMS),
+        display: DEFAULT_DISPLAY,
+        performance: DEFAULT_PERFORMANCE,
+        hasUnsavedChanges: false,
       };
     }),
   requestSceneExport: () =>

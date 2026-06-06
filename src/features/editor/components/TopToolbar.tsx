@@ -5,6 +5,7 @@ import {
   Cpu,
   FolderOpen,
   LoaderCircle,
+  FilePlus2,
   Palette,
   Save,
   Sparkles,
@@ -39,6 +40,8 @@ export function TopToolbar() {
   const clearImportedAsset = useEditorStore((state) => state.clearImportedAsset);
   const setImportStatus = useEditorStore((state) => state.setImportStatus);
   const applyProjectSnapshot = useEditorStore((state) => state.applyProjectSnapshot);
+  const markProjectSaved = useEditorStore((state) => state.markProjectSaved);
+  const resetProject = useEditorStore((state) => state.resetProject);
   const requestSceneExport = useEditorStore((state) => state.requestSceneExport);
   const selectedId = useEditorStore((state) => state.selectedId);
   const selectedName = useEditorStore((state) => state.selectedName);
@@ -60,6 +63,7 @@ export function TopToolbar() {
   );
   const sceneTree = useEditorStore((state) => state.sceneTree);
   const display = useEditorStore((state) => state.display);
+  const hasUnsavedChanges = useEditorStore((state) => state.hasUnsavedChanges);
   const inputRef = useRef<HTMLInputElement>(null);
   const projectInputRef = useRef<HTMLInputElement>(null);
   const importMeta = describeImportStatus(
@@ -74,6 +78,17 @@ export function TopToolbar() {
 
   function handleProjectOpenClick() {
     projectInputRef.current?.click();
+  }
+
+  function handleNewProjectClick() {
+    if (
+      hasUnsavedChanges &&
+      !window.confirm("Discard unsaved changes and start a new MeshCraft project?")
+    ) {
+      return;
+    }
+
+    resetProject();
   }
 
   function handleProjectSaveClick() {
@@ -103,6 +118,7 @@ export function TopToolbar() {
     link.download = "meshcraft-project.json";
     link.click();
     URL.revokeObjectURL(objectUrl);
+    markProjectSaved();
   }
 
   async function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
@@ -176,6 +192,7 @@ export function TopToolbar() {
 
       <div className="flex items-center gap-0.5">
         {[
+          { icon: FilePlus2, label: "New", onClick: handleNewProjectClick },
           { icon: FolderOpen, label: "Open", onClick: handleProjectOpenClick },
           { icon: Save, label: "Save", onClick: handleProjectSaveClick },
           { icon: Upload, label: "Import", onClick: handleImportClick },
@@ -230,6 +247,15 @@ export function TopToolbar() {
             )}
             {importMeta.label}
           </span>
+        </div>
+        <div
+          className={`rounded-sm px-2 py-1 font-mono text-[11px] ring-1 ${
+            hasUnsavedChanges
+              ? "bg-amber-500/10 text-amber-200 ring-amber-400/20"
+              : "bg-emerald-500/10 text-emerald-300 ring-emerald-400/20"
+          }`}
+        >
+          {hasUnsavedChanges ? "Unsaved" : "Saved"}
         </div>
         {importedAssetName && (
           <button
