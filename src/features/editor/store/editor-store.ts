@@ -9,6 +9,7 @@ import {
   DEFAULT_PROCEDURAL_TRANSFORMS,
   getSelectedTransform,
 } from "../lib/procedural-scene";
+import { applyProjectSnapshot, type ProjectSnapshot } from "../lib/project-snapshot";
 import { SCATTER_FIELD_INSTANCE_COUNT } from "../../viewport/lib/instanced-field";
 import {
   resolveSelectionTransform,
@@ -71,6 +72,7 @@ type EditorState = {
   setDisplayField: <K extends keyof DisplayState>(key: K, value: DisplayState[K]) => void;
   setShading: (shading: ShadingMode) => void;
   updatePerformance: (performance: Partial<PerformanceStats>) => void;
+  applyProjectSnapshot: (snapshot: ProjectSnapshot) => void;
 };
 
 export const useEditorStore = create<EditorState>((set) => ({
@@ -273,4 +275,17 @@ export const useEditorStore = create<EditorState>((set) => ({
         ...performance,
       },
     })),
+  applyProjectSnapshot: (snapshot) =>
+    set((state) => {
+      if (state.importedAssetUrl) {
+        URL.revokeObjectURL(state.importedAssetUrl);
+      }
+
+      const applied = applyProjectSnapshot(snapshot);
+
+      return {
+        ...applied,
+        sceneTree: SCENE_TREE,
+      };
+    }),
 }));

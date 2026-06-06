@@ -13,6 +13,10 @@ import {
 import { useRef, type ChangeEvent } from "react";
 import { isSupportedImportFile } from "../lib/import-file";
 import { describeImportStatus } from "../lib/import-status";
+import {
+  createProjectSnapshot,
+  parseProjectSnapshot,
+} from "../lib/project-snapshot";
 import { useEditorStore } from "../store/editor-store";
 import type { EditorMode } from "../types";
 
@@ -33,7 +37,15 @@ export function TopToolbar() {
   const setImportedAsset = useEditorStore((state) => state.setImportedAsset);
   const clearImportedAsset = useEditorStore((state) => state.clearImportedAsset);
   const setImportStatus = useEditorStore((state) => state.setImportStatus);
+  const applyProjectSnapshot = useEditorStore((state) => state.applyProjectSnapshot);
+  const selectedId = useEditorStore((state) => state.selectedId);
+  const selectedName = useEditorStore((state) => state.selectedName);
+  const transformTool = useEditorStore((state) => state.transformTool);
+  const materialLibrary = useEditorStore((state) => state.materialLibrary);
+  const objectTransforms = useEditorStore((state) => state.objectTransforms);
+  const display = useEditorStore((state) => state.display);
   const inputRef = useRef<HTMLInputElement>(null);
+  const projectInputRef = useRef<HTMLInputElement>(null);
   const importMeta = describeImportStatus(
     importStatus,
     importedAssetName,
@@ -42,6 +54,32 @@ export function TopToolbar() {
 
   function handleImportClick() {
     inputRef.current?.click();
+  }
+
+  function handleProjectOpenClick() {
+    projectInputRef.current?.click();
+  }
+
+  function handleProjectSaveClick() {
+    const snapshot = createProjectSnapshot({
+      mode,
+      selectedId,
+      selectedName,
+      transformTool,
+      materialLibrary,
+      objectTransforms,
+      display,
+      importedAssetName,
+    });
+    const blob = new Blob([JSON.stringify(snapshot, null, 2)], {
+      type: "application/json",
+    });
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = "meshcraft-project.json";
+    link.click();
+    URL.revokeObjectURL(objectUrl);
   }
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
@@ -62,6 +100,25 @@ export function TopToolbar() {
     event.target.value = "";
   }
 
+  async function handleProjectFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    try {
+      const text = await file.text();
+      const snapshot = parseProjectSnapshot(text);
+      clearImportedAsset();
+      applyProjectSnapshot(snapshot);
+    } catch {
+      setImportStatus("error", "Invalid MeshCraft project file");
+    } finally {
+      event.target.value = "";
+    }
+  }
+
   return (
     <header className="flex h-12 shrink-0 items-center gap-4 border-b border-white/10 bg-[#11161d]/95 px-3 backdrop-blur">
       <input
@@ -70,6 +127,13 @@ export function TopToolbar() {
         accept=".glb,.gltf,model/gltf-binary,model/gltf+json"
         className="hidden"
         onChange={handleFileChange}
+      />
+      <input
+        ref={projectInputRef}
+        type="file"
+        accept=".json,.meshcraft"
+        className="hidden"
+        onChange={handleProjectFileChange}
       />
       <div className="flex items-center gap-2">
         <div className="flex size-7 items-center justify-center rounded-sm bg-cyan-400/10 ring-1 ring-cyan-300/20">
@@ -84,8 +148,8 @@ export function TopToolbar() {
 
       <div className="flex items-center gap-0.5">
         {[
-          { icon: FolderOpen, label: "Open", onClick: undefined },
-          { icon: Save, label: "Save", onClick: undefined },
+          { icon: FolderOpen, label: "Open", onClick: handleProjectOpenClick },
+          { icon: Save, label: "Save", onClick: handleProjectSaveClick },
           { icon: Upload, label: "Import", onClick: handleImportClick },
         ].map(({ icon: Icon, label, onClick }) => (
           <button
