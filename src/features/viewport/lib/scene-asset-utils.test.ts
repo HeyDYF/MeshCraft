@@ -7,6 +7,11 @@ import {
   disposeSceneResources,
   summarizeSceneTree,
 } from "./scene-asset-utils";
+import {
+  getImportedMaterialId,
+  getImportedObjectId,
+  getImportedTextureNodeId,
+} from "./imported-node-ids";
 
 function makeTexture() {
   const texture = new THREE.Texture();
@@ -62,15 +67,21 @@ describe("buildImportedSceneTree", () => {
       "Lighting",
     ]);
     expect(tree.children?.[0]?.children?.[0]).toMatchObject({
+      id: getImportedObjectId([0]),
       name: "HousingShell",
       kind: "mesh",
       tris: 2,
     });
     expect(tree.children?.[1]?.children?.[0]).toMatchObject({
+      id: getImportedMaterialId(getImportedObjectId([0]), 0),
       name: "ShellMaterial",
       kind: "material",
     });
     expect(tree.children?.[2]?.children?.[0]).toMatchObject({
+      id: getImportedTextureNodeId(
+        getImportedMaterialId(getImportedObjectId([0]), 0),
+        "map",
+      ),
       name: "shell_albedo",
       kind: "texture",
     });
@@ -165,15 +176,15 @@ describe("extractImportedMaterialBindings", () => {
     material.name = "ImportedPaint";
 
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(), material);
-    mesh.uuid = "mesh-uuid";
-
     const root = new THREE.Group();
     root.add(mesh);
 
     const bindings = extractImportedMaterialBindings(root);
+    const objectId = getImportedObjectId([0]);
+    const materialId = getImportedMaterialId(objectId, 0);
 
     expect(bindings.materialLibrary).toEqual({
-      [`${mesh.uuid}-material-0`]: {
+      [materialId]: {
         baseColor: "#336699",
         metalness: 0.7,
         roughness: 0.2,
@@ -182,19 +193,19 @@ describe("extractImportedMaterialBindings", () => {
       },
     });
     expect(bindings.nodeMaterialBindings).toEqual({
-      [mesh.uuid]: `${mesh.uuid}-material-0`,
-      [`${mesh.uuid}-material-0`]: `${mesh.uuid}-material-0`,
+      [objectId]: materialId,
+      [materialId]: materialId,
     });
     expect(bindings.materialTextureSlots).toEqual({
-      [`${mesh.uuid}-material-0`]: [
+      [materialId]: [
         {
           channel: "map",
-          textureId: "albedo-uuid",
+          textureId: getImportedTextureNodeId(materialId, "map"),
           textureName: "paint_albedo",
         },
         {
           channel: "normalMap",
-          textureId: "normal-uuid",
+          textureId: getImportedTextureNodeId(materialId, "normalMap"),
           textureName: "paint_normal",
         },
       ],

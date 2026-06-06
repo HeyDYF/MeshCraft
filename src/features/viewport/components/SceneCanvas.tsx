@@ -17,6 +17,11 @@ import {
   extractImportedMaterialBindings,
 } from "../lib/scene-asset-utils";
 import {
+  buildImportedObjectRegistry,
+  findImportedObjectId,
+  getImportedMaterialId,
+} from "../lib/imported-node-ids";
+import {
   createConfiguredGltfLoader,
   loadGltfWithLoader,
 } from "../lib/gltf-loader";
@@ -126,29 +131,31 @@ export function SceneCanvas() {
           }
 
           nextScene = gltf.scene.clone(true);
-          objectMapRef.current.clear();
+          objectMapRef.current = buildImportedObjectRegistry(nextScene);
           originalTextureSlotsRef.current.clear();
           nextScene.traverse((object) => {
             object.castShadow = true;
             object.receiveShadow = true;
-            objectMapRef.current.set(object.uuid, object);
-
-            if (object instanceof THREE.Mesh) {
-              const materials = Array.isArray(object.material)
-                ? object.material
-                : [object.material];
-
-              materials.forEach((material, index) => {
-                const materialId = `${object.uuid}-material-${index}`;
-                const originalSlots: Record<string, THREE.Texture | null> = {};
-                Object.entries(material).forEach(([channel, value]) => {
-                  if (value instanceof THREE.Texture) {
-                    originalSlots[channel] = value;
-                  }
-                });
-                originalTextureSlotsRef.current.set(materialId, originalSlots);
-              });
+          });
+          objectMapRef.current.forEach((object, objectId) => {
+            if (!(object instanceof THREE.Mesh)) {
+              return;
             }
+
+            const materials = Array.isArray(object.material)
+              ? object.material
+              : [object.material];
+
+            materials.forEach((material, index) => {
+              const materialId = getImportedMaterialId(objectId, index);
+              const originalSlots: Record<string, THREE.Texture | null> = {};
+              Object.entries(material).forEach(([channel, value]) => {
+                if (value instanceof THREE.Texture) {
+                  originalSlots[channel] = value;
+                }
+              });
+              originalTextureSlotsRef.current.set(materialId, originalSlots);
+            });
           });
           const metrics = collectSceneMetrics(nextScene);
           const importedTransforms = buildImportedTransformRegistry(
@@ -209,7 +216,8 @@ export function SceneCanvas() {
       }
 
       scene.traverse((object) => {
-        if (!(object instanceof THREE.Mesh)) {
+        const objectId = findImportedObjectId(objectMapRef.current, object);
+        if (!(object instanceof THREE.Mesh) || !objectId) {
           return;
         }
 
@@ -218,7 +226,7 @@ export function SceneCanvas() {
           : [object.material];
 
         materials.forEach((material, index) => {
-          const materialId = `${object.uuid}-material-${index}`;
+          const materialId = getImportedMaterialId(objectId, index);
           const nextState = importedMaterialLibrary[materialId];
           if (!nextState) {
             return;
@@ -258,12 +266,16 @@ export function SceneCanvas() {
         const activeKeys = new Set<string>();
 
         for (const [materialId, originalSlots] of originalTextureSlotsRef.current.entries()) {
-          const [objectUuid, materialIndex] = materialId.split("-material-");
-          if (!objectUuid || materialIndex === undefined) {
+          const materialMarker = ":material:";
+          const materialMarkerIndex = materialId.lastIndexOf(materialMarker);
+
+          if (materialMarkerIndex === -1) {
             continue;
           }
 
-          const object = objectMapRef.current.get(objectUuid);
+          const objectId = materialId.slice(0, materialMarkerIndex);
+          const materialIndex = materialId.slice(materialMarkerIndex + materialMarker.length);
+          const object = objectMapRef.current.get(objectId);
 
           if (!(object instanceof THREE.Mesh)) {
             continue;
@@ -399,15 +411,16 @@ export function SceneCanvas() {
             onClick={(event: ThreeEvent<MouseEvent>) => {
               event.stopPropagation();
               const object = event.object;
+              const objectId = findImportedObjectId(objectMapRef.current, object);
 
-              if (object && object.uuid !== rootRef.current?.uuid) {
-                setSelected(object.uuid, object.name || "ImportedNode");
+              if (object && objectId) {
+                setSelected(objectId, object.name || "ImportedNode");
                 setTransform({
                   position: {
                     x: object.position.x,
-                  y: object.position.y,
-                  z: object.position.z,
-                },
+                    y: object.position.y,
+                    z: object.position.z,
+                  },
                   rotation: {
                     x: object.rotation.x,
                     y: object.rotation.y,

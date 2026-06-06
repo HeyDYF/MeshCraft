@@ -5,6 +5,11 @@ import type {
   NodeKind,
   SceneNode,
 } from "../../editor/types";
+import {
+  buildImportedObjectRegistry,
+  getImportedMaterialId,
+  getImportedTextureNodeId,
+} from "./imported-node-ids";
 
 type SceneMetrics = {
   triangles: number;
@@ -77,33 +82,36 @@ export function buildImportedSceneTree(
 ): SceneNode {
   const groups = new Map<NodeKind, SceneNode[]>();
   const textureIds = new Set<string>();
+  const objectRegistry = buildImportedObjectRegistry(root);
 
-  root.traverse((object) => {
-    if (object === root) {
-      return;
-    }
-
+  objectRegistry.forEach((object, objectId) => {
     if (object instanceof THREE.Mesh) {
       const positionCount = object.geometry.attributes.position?.count ?? 0;
       pushNode(groups, "mesh", {
-        id: object.uuid,
+        id: objectId,
         name: safeName(object, `Mesh_${groups.get("mesh")?.length ?? 0}`),
         kind: "mesh",
         tris: Math.floor(positionCount / 3),
       });
 
       materialArray(object.material).forEach((material, index) => {
+        const materialId = getImportedMaterialId(objectId, index);
         pushNode(groups, "material", {
-          id: `${object.uuid}-material-${index}`,
+          id: materialId,
           name: material.name.trim() || `${safeName(object, "Mesh")}_Material_${index + 1}`,
           kind: "material",
         });
 
-        Object.values(material).forEach((value) => {
-          if (value instanceof THREE.Texture && !textureIds.has(value.uuid)) {
-            textureIds.add(value.uuid);
+        Object.entries(material).forEach(([channel, value]) => {
+          if (value instanceof THREE.Texture) {
+            const textureId = getImportedTextureNodeId(materialId, channel);
+            if (textureIds.has(textureId)) {
+              return;
+            }
+
+            textureIds.add(textureId);
             pushNode(groups, "texture", {
-              id: value.uuid,
+              id: textureId,
               name: value.name.trim() || `${safeName(object, "Mesh")}_Texture_${textureIds.size}`,
               kind: "texture",
             });
@@ -115,7 +123,7 @@ export function buildImportedSceneTree(
 
     if (object instanceof THREE.Light) {
       pushNode(groups, "light", {
-        id: object.uuid,
+        id: objectId,
         name: safeName(object, "Light"),
         kind: "light",
       });
@@ -124,7 +132,7 @@ export function buildImportedSceneTree(
 
     if (object instanceof THREE.Camera) {
       pushNode(groups, "camera", {
-        id: object.uuid,
+        id: objectId,
         name: safeName(object, "Camera"),
         kind: "camera",
       });
@@ -139,7 +147,7 @@ export function buildImportedSceneTree(
 
   if (meshNodes?.length) {
     children.push({
-      id: `${root.uuid}-meshes`,
+      id: "imported-group:meshes",
       name: "Meshes",
       kind: "group",
       children: meshNodes,
@@ -148,7 +156,7 @@ export function buildImportedSceneTree(
 
   if (materialNodes?.length) {
     children.push({
-      id: `${root.uuid}-materials`,
+      id: "imported-group:materials",
       name: "Materials",
       kind: "group",
       children: materialNodes,
@@ -157,7 +165,7 @@ export function buildImportedSceneTree(
 
   if (textureNodes?.length) {
     children.push({
-      id: `${root.uuid}-textures`,
+      id: "imported-group:textures",
       name: "Textures",
       kind: "group",
       children: textureNodes,
@@ -166,7 +174,7 @@ export function buildImportedSceneTree(
 
   if (lightingNodes.length) {
     children.push({
-      id: `${root.uuid}-lighting`,
+      id: "imported-group:lighting",
       name: "Lighting",
       kind: "group",
       children: lightingNodes,
@@ -174,7 +182,7 @@ export function buildImportedSceneTree(
   }
 
   return {
-    id: root.uuid,
+    id: "imported-root",
     name: assetName,
     kind: "group",
     children,
@@ -229,14 +237,15 @@ export function extractImportedMaterialBindings(root: THREE.Object3D) {
   const materialLibrary: Record<string, MaterialState> = {};
   const nodeMaterialBindings: Record<string, string> = {};
   const materialTextureSlots: Record<string, MaterialTextureSlot[]> = {};
+  const objectRegistry = buildImportedObjectRegistry(root);
 
-  root.traverse((object) => {
+  objectRegistry.forEach((object, objectId) => {
     if (!(object instanceof THREE.Mesh)) {
       return;
     }
 
     materialArray(object.material).forEach((material, index) => {
-      const materialId = `${object.uuid}-material-${index}`;
+      const materialId = getImportedMaterialId(objectId, index);
       const color =
         "color" in material && material.color instanceof THREE.Color
           ? `#${material.color.getHexString()}`
@@ -257,12 +266,12 @@ export function extractImportedMaterialBindings(root: THREE.Object3D) {
         .filter(([, value]) => value instanceof THREE.Texture)
         .map(([channel, value]) => ({
           channel,
-          textureId: value.uuid,
+          textureId: getImportedTextureNodeId(materialId, channel),
           textureName: value.name.trim() || `${material.name.trim() || materialId}_${channel}`,
         }));
       nodeMaterialBindings[materialId] = materialId;
       if (index === 0) {
-        nodeMaterialBindings[object.uuid] = materialId;
+        nodeMaterialBindings[objectId] = materialId;
       }
     });
   });

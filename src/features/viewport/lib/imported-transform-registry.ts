@@ -29,8 +29,8 @@ export function buildImportedTransformRegistry(
     "imported-root": rootTransform,
   };
 
-  objectMap.forEach((object, id) => {
-    registry[id] = snapshotObjectTransform(object);
+  objectMap.forEach((object, objectId) => {
+    registry[objectId] = snapshotObjectTransform(object);
   });
 
   return registry;
