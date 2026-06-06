@@ -51,6 +51,7 @@ type EditorState = {
   transform: TransformState;
   display: DisplayState;
   performance: PerformanceStats;
+  exportRequestNonce: number;
   setMode: (mode: EditorMode) => void;
   setSelected: (id: string, name: string) => void;
   setImportedAsset: (name: string, url: string) => void;
@@ -73,6 +74,7 @@ type EditorState = {
   setShading: (shading: ShadingMode) => void;
   updatePerformance: (performance: Partial<PerformanceStats>) => void;
   applyProjectSnapshot: (snapshot: ProjectSnapshot) => void;
+  requestSceneExport: () => void;
 };
 
 export const useEditorStore = create<EditorState>((set) => ({
@@ -112,6 +114,7 @@ export const useEditorStore = create<EditorState>((set) => ({
     decodeTimeMs: 11.8,
     instances: SCATTER_FIELD_INSTANCE_COUNT,
   },
+  exportRequestNonce: 0,
   setMode: (mode) => set({ mode }),
   setSelected: (id, name) =>
     set((state) => ({
@@ -288,4 +291,8 @@ export const useEditorStore = create<EditorState>((set) => ({
         sceneTree: SCENE_TREE,
       };
     }),
+  requestSceneExport: () =>
+    set((state) => ({
+      exportRequestNonce: state.exportRequestNonce + 1,
+    })),
 }));

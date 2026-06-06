@@ -38,6 +38,7 @@ export function TopToolbar() {
   const clearImportedAsset = useEditorStore((state) => state.clearImportedAsset);
   const setImportStatus = useEditorStore((state) => state.setImportStatus);
   const applyProjectSnapshot = useEditorStore((state) => state.applyProjectSnapshot);
+  const requestSceneExport = useEditorStore((state) => state.requestSceneExport);
   const selectedId = useEditorStore((state) => state.selectedId);
   const selectedName = useEditorStore((state) => state.selectedName);
   const transformTool = useEditorStore((state) => state.transformTool);
@@ -218,9 +219,12 @@ export function TopToolbar() {
           <span className="text-slate-100">{fps}</span>
           <span className="text-slate-500">fps</span>
         </div>
-        <button className="flex items-center gap-1.5 rounded-sm bg-cyan-300 px-3 py-1.5 text-xs font-semibold text-slate-950 transition-opacity hover:opacity-90">
+        <button
+          onClick={requestSceneExport}
+          className="flex items-center gap-1.5 rounded-sm bg-cyan-300 px-3 py-1.5 text-xs font-semibold text-slate-950 transition-opacity hover:opacity-90"
+        >
           <Sparkles className="size-3.5" strokeWidth={2} />
-          Render
+          Export GLB
         </button>
       </div>
     </header>

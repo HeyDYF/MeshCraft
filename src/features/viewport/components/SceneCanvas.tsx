@@ -22,6 +22,7 @@ import {
 } from "../lib/gltf-loader";
 import { buildImportedTransformRegistry } from "../lib/imported-transform-registry";
 import { SCATTER_FIELD_INSTANCE_COUNT } from "../lib/instanced-field";
+import { exportSceneToGlb } from "../lib/scene-export";
 import { InstancedScatterField } from "./InstancedScatterField";
 import { SceneLights } from "./SceneLights";
 import { ViewportModel } from "./ViewportModel";
@@ -41,8 +42,10 @@ export function SceneCanvas() {
   const mode = useEditorStore((state) => state.mode);
   const display = useEditorStore((state) => state.display);
   const importedAssetUrl = useEditorStore((state) => state.importedAssetUrl);
+  const importedAssetName = useEditorStore((state) => state.importedAssetName);
   const selectedId = useEditorStore((state) => state.selectedId);
   const transformTool = useEditorStore((state) => state.transformTool);
+  const exportRequestNonce = useEditorStore((state) => state.exportRequestNonce);
   const importedMaterialLibrary = useEditorStore((state) => state.importedMaterialLibrary);
   const setImportStatus = useEditorStore((state) => state.setImportStatus);
   const setSceneTree = useEditorStore((state) => state.setSceneTree);
@@ -50,6 +53,8 @@ export function SceneCanvas() {
   const setImportedObjectTransforms = useEditorStore((state) => state.setImportedObjectTransforms);
   const setSelected = useEditorStore((state) => state.setSelected);
   const setTransform = useEditorStore((state) => state.setTransform);
+  const proceduralExportRootRef = useRef<THREE.Group>(null);
+  const importedExportRootRef = useRef<THREE.Group>(null);
 
   function PerformanceBridge() {
     const updatePerformance = useEditorStore((state) => state.updatePerformance);
@@ -98,7 +103,7 @@ export function SceneCanvas() {
     const updatePerformance = useEditorStore((state) => state.updatePerformance);
     const importedAssetName = useEditorStore((state) => state.importedAssetName);
     const importedObjectTransforms = useEditorStore((state) => state.importedObjectTransforms);
-    const rootRef = useRef<THREE.Group>(null);
+    const rootRef = importedExportRootRef;
     const objectMapRef = useRef(new Map<string, THREE.Object3D>());
 
     useEffect(() => {
@@ -353,6 +358,22 @@ export function SceneCanvas() {
     );
   }
 
+  useEffect(() => {
+    if (!exportRequestNonce) {
+      return;
+    }
+
+    const activeRoot = importedAssetUrl
+      ? importedExportRootRef.current
+      : proceduralExportRootRef.current;
+
+    if (!activeRoot) {
+      return;
+    }
+
+    void exportSceneToGlb(activeRoot.clone(true), importedAssetName);
+  }, [exportRequestNonce, importedAssetName, importedAssetUrl]);
+
   return (
     <Canvas
       className="h-full w-full"
@@ -380,7 +401,11 @@ export function SceneCanvas() {
         <SceneLights />
         <Environment preset="city" />
         <group position={[0, 0.4, 0]}>
-          {importedAssetUrl ? <ImportedModel url={importedAssetUrl} /> : <ViewportModel />}
+          {importedAssetUrl ? (
+            <ImportedModel url={importedAssetUrl} />
+          ) : (
+            <ViewportModel exportRootRef={proceduralExportRootRef} />
+          )}
           <InstancedScatterField />
         </group>
         <mesh rotation-x={-Math.PI / 2} receiveShadow position={[0, -1.2, 0]}>

@@ -1,6 +1,6 @@
 import { Edges, TransformControls } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import type { Group, Mesh } from "three";
 import { DoubleSide, Vector3 } from "three";
 import { getSelectionCapabilities } from "../../editor/lib/editor-bindings";
@@ -65,8 +65,9 @@ function transformToTriplet(transform: TransformState, group: keyof TransformSta
   return [value.x, value.y, value.z] as [number, number, number];
 }
 
-export function ViewportModel() {
-  const group = useRef<Group>(null);
+export function ViewportModel({ exportRootRef }: { exportRootRef?: RefObject<Group | null> }) {
+  const localGroupRef = useRef<Group>(null);
+  const group = exportRootRef ?? localGroupRef;
   const rotor = useRef<Group>(null);
   const housingRef = useRef<Mesh>(null);
   const ventsRef = useRef<Group>(null);
