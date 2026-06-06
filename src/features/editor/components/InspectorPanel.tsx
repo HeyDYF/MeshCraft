@@ -3,17 +3,21 @@ import {
   Eye,
   Gauge,
   Info,
+  RefreshCcw,
   Maximize,
   Move,
   Palette,
   RotateCw,
+  Upload,
 } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ChangeEvent, type ReactNode } from "react";
 import { getSelectionCapabilities } from "../lib/editor-bindings";
+import { isSupportedTextureFile } from "../lib/texture-overrides";
 import { useEditorStore } from "../store/editor-store";
 import type {
   DisplayState,
   MaterialState,
+  MaterialTextureOverride,
   MaterialTextureSlot,
   ShadingMode,
   TransformState,
@@ -265,10 +269,22 @@ function MaterialSection({ material }: { material: MaterialState | null }) {
 function TextureSlotsSection({
   slots,
   canInspect,
+  activeMaterialId,
 }: {
   slots: MaterialTextureSlot[];
   canInspect: boolean;
+  activeMaterialId: string | null;
 }) {
+  const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const textureOverrides = useEditorStore((state) => state.importedMaterialTextureOverrides);
+  const setImportedTextureOverride = useEditorStore(
+    (state) => state.setImportedTextureOverride,
+  );
+  const clearImportedTextureOverride = useEditorStore(
+    (state) => state.clearImportedTextureOverride,
+  );
+  const setImportStatus = useEditorStore((state) => state.setImportStatus);
+
   if (!canInspect) {
     return (
       <div className="rounded-sm bg-black/20 px-3 py-3 text-[11px] text-slate-500 ring-1 ring-white/10">
@@ -287,20 +303,84 @@ function TextureSlotsSection({
 
   return (
     <div className="space-y-2">
-      {slots.map((slot) => (
-        <div
-          key={`${slot.textureId}-${slot.channel}`}
-          className="rounded-sm bg-black/20 px-3 py-2 ring-1 ring-white/10"
-        >
-          <div className="text-[10px] uppercase tracking-wide text-slate-600">
-            {slot.channel}
+      {slots.map((slot) => {
+        const override = activeMaterialId
+          ? textureOverrides[activeMaterialId]?.[slot.channel] ?? null
+          : null;
+
+        async function handleTextureChange(event: ChangeEvent<HTMLInputElement>) {
+          const file = event.target.files?.[0];
+
+          if (!file || !activeMaterialId) {
+            return;
+          }
+
+          if (!isSupportedTextureFile(file.name)) {
+            setImportStatus("error", "Only .png, .jpg, .jpeg, and .webp textures are supported");
+            event.target.value = "";
+            return;
+          }
+
+          const objectUrl = URL.createObjectURL(file);
+          setImportedTextureOverride(activeMaterialId, slot.channel, {
+            name: file.name,
+            objectUrl,
+          } satisfies MaterialTextureOverride);
+          event.target.value = "";
+        }
+
+        return (
+          <div
+            key={`${slot.textureId}-${slot.channel}`}
+            className="rounded-sm bg-black/20 px-3 py-2 ring-1 ring-white/10"
+          >
+            <input
+              ref={(node) => {
+                inputRefs.current[slot.channel] = node;
+              }}
+              type="file"
+              accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp"
+              className="hidden"
+              onChange={handleTextureChange}
+            />
+            <div className="flex items-center gap-2">
+              <div className="text-[10px] uppercase tracking-wide text-slate-600">
+                {slot.channel}
+              </div>
+              {override && (
+                <span className="rounded-sm bg-cyan-400/10 px-1.5 py-0.5 text-[10px] font-mono text-cyan-300 ring-1 ring-cyan-300/20">
+                  Override
+                </span>
+              )}
+            </div>
+            <div className="mt-1 font-mono text-[11px] text-slate-100">
+              {override?.name ?? slot.textureName}
+            </div>
+            <div className="mt-1 font-mono text-[10px] text-slate-500">
+              {override?.objectUrl ?? slot.textureId}
+            </div>
+            <div className="mt-2 flex items-center gap-2">
+              <button
+                onClick={() => inputRefs.current[slot.channel]?.click()}
+                className="inline-flex items-center gap-1 rounded-sm bg-black/30 px-2 py-1 text-[10px] font-medium text-slate-200 ring-1 ring-white/10 transition-colors hover:bg-white/5"
+              >
+                <Upload className="size-3" strokeWidth={1.8} />
+                Replace
+              </button>
+              <button
+                onClick={() =>
+                  activeMaterialId && clearImportedTextureOverride(activeMaterialId, slot.channel)
+                }
+                disabled={!override}
+                className="inline-flex items-center gap-1 rounded-sm bg-black/20 px-2 py-1 text-[10px] font-medium text-slate-400 ring-1 ring-white/10 transition-colors enabled:hover:bg-white/5 enabled:hover:text-slate-100 disabled:opacity-40"
+              >
+                <RefreshCcw className="size-3" strokeWidth={1.8} />
+                Reset
+              </button>
+            </div>
           </div>
-          <div className="mt-1 font-mono text-[11px] text-slate-100">
-            {slot.textureName}
-          </div>
-          <div className="mt-1 font-mono text-[10px] text-slate-500">{slot.textureId}</div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -434,7 +514,11 @@ export function InspectorPanel() {
       </Section>
 
       <Section title="Textures" icon={Palette}>
-        <TextureSlotsSection slots={textureSlots} canInspect={canEditMaterial} />
+        <TextureSlotsSection
+          slots={textureSlots}
+          canInspect={canEditMaterial}
+          activeMaterialId={activeMaterialId}
+        />
       </Section>
 
       <Section title="Selection" icon={Info}>

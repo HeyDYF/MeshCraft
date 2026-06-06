@@ -42,6 +42,11 @@ export type MaterialTextureSlot = {
   textureName: string;
 };
 
+export type MaterialTextureOverride = {
+  name: string;
+  objectUrl: string;
+};
+
 export type DisplayState = {
   shading: ShadingMode;
   showGrid: boolean;

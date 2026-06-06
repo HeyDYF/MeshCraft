@@ -47,6 +47,9 @@ export function SceneCanvas() {
   const transformTool = useEditorStore((state) => state.transformTool);
   const exportRequestNonce = useEditorStore((state) => state.exportRequestNonce);
   const importedMaterialLibrary = useEditorStore((state) => state.importedMaterialLibrary);
+  const importedMaterialTextureOverrides = useEditorStore(
+    (state) => state.importedMaterialTextureOverrides,
+  );
   const setImportStatus = useEditorStore((state) => state.setImportStatus);
   const setSceneTree = useEditorStore((state) => state.setSceneTree);
   const setImportedMaterialBindings = useEditorStore((state) => state.setImportedMaterialBindings);
@@ -105,6 +108,10 @@ export function SceneCanvas() {
     const importedObjectTransforms = useEditorStore((state) => state.importedObjectTransforms);
     const rootRef = importedExportRootRef;
     const objectMapRef = useRef(new Map<string, THREE.Object3D>());
+    const originalTextureSlotsRef = useRef(
+      new Map<string, Record<string, THREE.Texture | null>>(),
+    );
+    const overrideTextureCacheRef = useRef(new Map<string, THREE.Texture>());
 
     useEffect(() => {
       let disposed = false;
@@ -119,10 +126,29 @@ export function SceneCanvas() {
           }
 
           nextScene = gltf.scene.clone(true);
+          objectMapRef.current.clear();
+          originalTextureSlotsRef.current.clear();
           nextScene.traverse((object) => {
             object.castShadow = true;
             object.receiveShadow = true;
             objectMapRef.current.set(object.uuid, object);
+
+            if (object instanceof THREE.Mesh) {
+              const materials = Array.isArray(object.material)
+                ? object.material
+                : [object.material];
+
+              materials.forEach((material, index) => {
+                const materialId = `${object.uuid}-material-${index}`;
+                const originalSlots: Record<string, THREE.Texture | null> = {};
+                Object.entries(material).forEach(([channel, value]) => {
+                  if (value instanceof THREE.Texture) {
+                    originalSlots[channel] = value;
+                  }
+                });
+                originalTextureSlotsRef.current.set(materialId, originalSlots);
+              });
+            }
           });
           const metrics = collectSceneMetrics(nextScene);
           const importedTransforms = buildImportedTransformRegistry(
@@ -159,6 +185,10 @@ export function SceneCanvas() {
       return () => {
         disposed = true;
         dracoLoader.dispose();
+        overrideTextureCacheRef.current.forEach((texture) => texture.dispose());
+        overrideTextureCacheRef.current.clear();
+        objectMapRef.current.clear();
+        originalTextureSlotsRef.current.clear();
         if (nextScene) {
           disposeSceneResources(nextScene);
         }
@@ -213,7 +243,98 @@ export function SceneCanvas() {
           material.needsUpdate = true;
         });
       });
-    }, [importedMaterialLibrary, scene]);
+    }, [importedMaterialLibrary, importedMaterialTextureOverrides, scene]);
+
+    useEffect(() => {
+      if (!scene) {
+        return;
+      }
+
+      const activeScene = scene;
+      let cancelled = false;
+      const textureLoader = new THREE.TextureLoader();
+
+      async function applyTextureOverrides() {
+        const activeKeys = new Set<string>();
+
+        for (const [materialId, originalSlots] of originalTextureSlotsRef.current.entries()) {
+          const [objectUuid, materialIndex] = materialId.split("-material-");
+          if (!objectUuid || materialIndex === undefined) {
+            continue;
+          }
+
+          const object = objectMapRef.current.get(objectUuid);
+
+          if (!(object instanceof THREE.Mesh)) {
+            continue;
+          }
+
+          const materials = Array.isArray(object.material)
+            ? object.material
+            : [object.material];
+          const material = materials[Number(materialIndex)];
+          if (!material) {
+            continue;
+          }
+
+          const channelOverrides = importedMaterialTextureOverrides[materialId] ?? {};
+
+          for (const [channel, originalTexture] of Object.entries(originalSlots)) {
+            const override = channelOverrides[channel];
+
+            if (!override) {
+              (material as unknown as Record<string, unknown>)[channel] = originalTexture;
+              continue;
+            }
+
+            const cacheKey = `${materialId}:${channel}:${override.objectUrl}`;
+            activeKeys.add(cacheKey);
+            let texture = overrideTextureCacheRef.current.get(cacheKey);
+
+            if (!texture) {
+              texture = await textureLoader.loadAsync(override.objectUrl);
+              texture.flipY = false;
+              if (channel === "map" || channel === "emissiveMap") {
+                texture.colorSpace = THREE.SRGBColorSpace;
+              }
+              overrideTextureCacheRef.current.set(cacheKey, texture);
+            }
+
+            if (cancelled) {
+              return;
+            }
+
+            (material as unknown as Record<string, unknown>)[channel] = texture;
+          }
+
+          material.needsUpdate = true;
+        }
+
+        overrideTextureCacheRef.current.forEach((texture, key) => {
+          if (!activeKeys.has(key)) {
+            texture.dispose();
+            overrideTextureCacheRef.current.delete(key);
+          }
+        });
+
+        activeScene.traverse((object) => {
+          if (object instanceof THREE.Mesh) {
+            const materials = Array.isArray(object.material)
+              ? object.material
+              : [object.material];
+            materials.forEach((material) => {
+              material.needsUpdate = true;
+            });
+          }
+        });
+      }
+
+      void applyTextureOverrides();
+
+      return () => {
+        cancelled = true;
+      };
+    }, [importedMaterialTextureOverrides, scene]);
 
     if (!scene) {
       return null;

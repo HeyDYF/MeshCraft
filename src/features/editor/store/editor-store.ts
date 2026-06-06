@@ -12,6 +12,11 @@ import {
 import { applyProjectSnapshot, type ProjectSnapshot } from "../lib/project-snapshot";
 import { SCATTER_FIELD_INSTANCE_COUNT } from "../../viewport/lib/instanced-field";
 import {
+  clearTextureOverride,
+  setTextureOverride,
+  type TextureOverrideMap,
+} from "../lib/texture-overrides";
+import {
   resolveSelectionTransform,
   updateSelectionTransformMaps,
 } from "../lib/selection-transform-state";
@@ -19,6 +24,7 @@ import type {
   DisplayState,
   EditorMode,
   MaterialState,
+  MaterialTextureOverride,
   MaterialTextureSlot,
   PerformanceStats,
   SceneNode,
@@ -30,6 +36,16 @@ import { SCENE_TREE } from "../types";
 
 type Axis = keyof TransformState["position"];
 type TransformGroup = keyof TransformState;
+
+function revokeTextureOverrides(
+  overrides: Record<string, Record<string, MaterialTextureOverride>>,
+) {
+  Object.values(overrides).forEach((materialOverrides) => {
+    Object.values(materialOverrides).forEach((override) => {
+      URL.revokeObjectURL(override.objectUrl);
+    });
+  });
+}
 
 type EditorState = {
   mode: EditorMode;
@@ -44,6 +60,7 @@ type EditorState = {
   importedMaterialLibrary: Record<string, MaterialState>;
   importedNodeMaterialBindings: Record<string, string>;
   importedMaterialTextureSlots: Record<string, MaterialTextureSlot[]>;
+  importedMaterialTextureOverrides: Record<string, Record<string, MaterialTextureOverride>>;
   objectTransforms: Record<string, TransformState>;
   importedObjectTransforms: Record<string, TransformState>;
   sceneTree: SceneNode;
@@ -62,6 +79,12 @@ type EditorState = {
     nodeMaterialBindings: Record<string, string>;
     materialTextureSlots: Record<string, MaterialTextureSlot[]>;
   }) => void;
+  setImportedTextureOverride: (
+    materialId: string,
+    channel: string,
+    override: MaterialTextureOverride,
+  ) => void;
+  clearImportedTextureOverride: (materialId: string, channel: string) => void;
   setSceneTree: (sceneTree: SceneNode) => void;
   setImportedObjectTransforms: (
     importedObjectTransforms: Record<string, TransformState>,
@@ -90,6 +113,7 @@ export const useEditorStore = create<EditorState>((set) => ({
   importedMaterialLibrary: {},
   importedNodeMaterialBindings: {},
   importedMaterialTextureSlots: {},
+  importedMaterialTextureOverrides: {},
   objectTransforms: DEFAULT_PROCEDURAL_TRANSFORMS,
   importedObjectTransforms: {},
   sceneTree: SCENE_TREE,
@@ -134,6 +158,7 @@ export const useEditorStore = create<EditorState>((set) => ({
       if (state.importedAssetUrl) {
         URL.revokeObjectURL(state.importedAssetUrl);
       }
+      revokeTextureOverrides(state.importedMaterialTextureOverrides);
 
       return {
         importedAssetName: name,
@@ -144,6 +169,7 @@ export const useEditorStore = create<EditorState>((set) => ({
         importedMaterialLibrary: {},
         importedNodeMaterialBindings: {},
         importedMaterialTextureSlots: {},
+        importedMaterialTextureOverrides: {},
         selectedId: "imported-root",
         selectedName: name.replace(/\.[^.]+$/, ""),
         importedObjectTransforms: {},
@@ -158,6 +184,7 @@ export const useEditorStore = create<EditorState>((set) => ({
       if (state.importedAssetUrl) {
         URL.revokeObjectURL(state.importedAssetUrl);
       }
+      revokeTextureOverrides(state.importedMaterialTextureOverrides);
 
       return {
         importedAssetName: null,
@@ -169,6 +196,7 @@ export const useEditorStore = create<EditorState>((set) => ({
         importedMaterialLibrary: {},
         importedNodeMaterialBindings: {},
         importedMaterialTextureSlots: {},
+        importedMaterialTextureOverrides: {},
         objectTransforms: DEFAULT_PROCEDURAL_TRANSFORMS,
         importedObjectTransforms: {},
         sceneTree: SCENE_TREE,
@@ -192,6 +220,37 @@ export const useEditorStore = create<EditorState>((set) => ({
       importedMaterialLibrary: materialLibrary,
       importedNodeMaterialBindings: nodeMaterialBindings,
       importedMaterialTextureSlots: materialTextureSlots,
+    }),
+  setImportedTextureOverride: (materialId, channel, override) =>
+    set((state) => {
+      const existing = state.importedMaterialTextureOverrides[materialId]?.[channel];
+      if (existing?.objectUrl && existing.objectUrl !== override.objectUrl) {
+        URL.revokeObjectURL(existing.objectUrl);
+      }
+
+      return {
+        importedMaterialTextureOverrides: setTextureOverride(
+          state.importedMaterialTextureOverrides as TextureOverrideMap,
+          materialId,
+          channel,
+          override,
+        ),
+      };
+    }),
+  clearImportedTextureOverride: (materialId, channel) =>
+    set((state) => {
+      const existing = state.importedMaterialTextureOverrides[materialId]?.[channel];
+      if (existing?.objectUrl) {
+        URL.revokeObjectURL(existing.objectUrl);
+      }
+
+      return {
+        importedMaterialTextureOverrides: clearTextureOverride(
+          state.importedMaterialTextureOverrides as TextureOverrideMap,
+          materialId,
+          channel,
+        ),
+      };
     }),
   setSceneTree: (sceneTree) => set({ sceneTree }),
   setImportedObjectTransforms: (importedObjectTransforms) =>
@@ -283,12 +342,14 @@ export const useEditorStore = create<EditorState>((set) => ({
       if (state.importedAssetUrl) {
         URL.revokeObjectURL(state.importedAssetUrl);
       }
+      revokeTextureOverrides(state.importedMaterialTextureOverrides);
 
       const applied = applyProjectSnapshot(snapshot);
 
       return {
         ...applied,
         sceneTree: SCENE_TREE,
+        importedMaterialTextureOverrides: {},
       };
     }),
   requestSceneExport: () =>
