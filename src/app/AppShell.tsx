@@ -1,0 +1,168 @@
+import { Move3D, RotateCw, Scaling, Upload } from "lucide-react";
+import { useState, type DragEvent } from "react";
+import {
+  getDragOverlayMessage,
+  isSupportedImportFile,
+  pickImportFile,
+} from "../features/editor/lib/import-file";
+import { TRANSFORM_TOOLS } from "../features/editor/lib/transform-tool";
+import { InspectorPanel } from "../features/editor/components/InspectorPanel";
+import { ScenePanel } from "../features/editor/components/ScenePanel";
+import { StatusBar } from "../features/editor/components/StatusBar";
+import { TopToolbar } from "../features/editor/components/TopToolbar";
+import { useEditorStore } from "../features/editor/store/editor-store";
+import { SceneCanvas } from "../features/viewport/components/SceneCanvas";
+
+const TRANSFORM_TOOL_ICONS = {
+  translate: Move3D,
+  rotate: RotateCw,
+  scale: Scaling,
+} as const;
+
+export function AppShell() {
+  const mode = useEditorStore((state) => state.mode);
+  const selectedName = useEditorStore((state) => state.selectedName);
+  const shading = useEditorStore((state) => state.display.shading);
+  const transformTool = useEditorStore((state) => state.transformTool);
+  const setImportedAsset = useEditorStore((state) => state.setImportedAsset);
+  const setImportStatus = useEditorStore((state) => state.setImportStatus);
+  const setTransformTool = useEditorStore((state) => state.setTransformTool);
+  const [dragActive, setDragActive] = useState(false);
+  const [dragAcceptsFile, setDragAcceptsFile] = useState(true);
+
+  function handleDragOver(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    const files = Array.from(event.dataTransfer.items)
+      .filter((item) => item.kind === "file")
+      .map((item) => ({ name: item.getAsFile()?.name ?? "" }));
+    const nextFile = pickImportFile(files);
+    setDragAcceptsFile(Boolean(nextFile));
+    setDragActive(true);
+  }
+
+  function handleDragLeave(event: DragEvent<HTMLDivElement>) {
+    if (event.currentTarget.contains(event.relatedTarget as Node | null)) {
+      return;
+    }
+
+    setDragActive(false);
+  }
+
+  function handleDrop(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    setDragActive(false);
+
+    const files = Array.from(event.dataTransfer.files);
+    const nextFile = pickImportFile(files);
+
+    if (!nextFile) {
+      setImportStatus("error", "Only .glb and .gltf files are supported");
+      return;
+    }
+
+    if (!isSupportedImportFile(nextFile)) {
+      setImportStatus("error", "Only .glb and .gltf files are supported");
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(nextFile);
+    setImportedAsset(nextFile.name, objectUrl);
+  }
+
+  return (
+    <div
+      className="flex h-screen w-full flex-col overflow-hidden bg-[#0d1117] text-slate-100"
+      onDragOver={handleDragOver}
+      onDragEnter={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      <TopToolbar />
+
+      <div className="flex min-h-0 flex-1">
+        <ScenePanel />
+
+        <main className="relative flex min-w-0 flex-1 flex-col bg-[#0d1117]">
+          <div className="flex h-9 shrink-0 items-center gap-3 border-b border-white/10 bg-[#12171f]/80 px-3">
+            <span className="font-mono text-[11px] text-slate-500">Perspective</span>
+            <div className="h-4 w-px bg-white/10" />
+            <span className="font-mono text-[11px] text-slate-500">
+              Selection: {selectedName}
+            </span>
+            <div className="ml-3 flex items-center gap-1 rounded-sm bg-black/20 p-0.5 ring-1 ring-white/10">
+              {TRANSFORM_TOOLS.map((tool) => {
+                const Icon = TRANSFORM_TOOL_ICONS[tool];
+                const active = tool === transformTool;
+
+                return (
+                  <button
+                    key={tool}
+                    onClick={() => setTransformTool(tool)}
+                    className={`flex items-center gap-1 rounded-sm px-2 py-1 text-[11px] transition-colors ${
+                      active
+                        ? "bg-cyan-400/10 text-cyan-300"
+                        : "text-slate-500 hover:text-slate-100"
+                    }`}
+                    title={tool}
+                  >
+                    <Icon className="size-3.5" strokeWidth={1.8} />
+                    <span className="hidden md:inline">{tool}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <span className="ml-auto font-mono text-[11px] uppercase text-cyan-300">
+              {mode} / {shading} / {transformTool}
+            </span>
+          </div>
+
+          <div className="relative min-h-0 flex-1">
+            <SceneCanvas />
+
+            {dragActive && (
+              <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#0d1117]/82 backdrop-blur-sm">
+                <div
+                  className={`flex w-[360px] flex-col items-center gap-4 rounded-2xl border px-6 py-8 text-center shadow-2xl ${
+                    dragAcceptsFile
+                      ? "border-cyan-300/40 bg-cyan-400/10 text-cyan-200"
+                      : "border-red-400/40 bg-red-500/10 text-red-200"
+                  }`}
+                >
+                  <div
+                    className={`rounded-full p-4 ${
+                      dragAcceptsFile ? "bg-cyan-300/10" : "bg-red-400/10"
+                    }`}
+                  >
+                    <Upload className="size-7" strokeWidth={1.8} />
+                  </div>
+                  <div className="font-mono text-xs uppercase tracking-[0.28em]">
+                    Import Asset
+                  </div>
+                  <div className="text-sm text-current/90">
+                    {getDragOverlayMessage(dragAcceptsFile)}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="pointer-events-none absolute left-3 top-3 font-mono text-[10px] leading-relaxed text-slate-500/80">
+              <div className="text-slate-100/95">{selectedName}</div>
+              <div>mode: {mode}</div>
+              <div>drag to orbit · scroll to zoom · right drag to pan</div>
+            </div>
+
+            <div className="pointer-events-none absolute bottom-3 right-3 flex items-center gap-1 rounded-sm bg-[#0f141b]/80 px-2 py-1 font-mono text-[10px] ring-1 ring-white/10">
+              <span className="text-[#ff5d5d]">X</span>
+              <span className="text-[#5dff8f]">Y</span>
+              <span className="text-[#5d9bff]">Z</span>
+            </div>
+          </div>
+        </main>
+
+        <InspectorPanel />
+      </div>
+
+      <StatusBar />
+    </div>
+  );
+}
