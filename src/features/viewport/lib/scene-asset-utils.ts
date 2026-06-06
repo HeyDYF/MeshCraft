@@ -1,5 +1,10 @@
 import * as THREE from "three";
-import type { MaterialState, NodeKind, SceneNode } from "../../editor/types";
+import type {
+  MaterialState,
+  MaterialTextureSlot,
+  NodeKind,
+  SceneNode,
+} from "../../editor/types";
 
 type SceneMetrics = {
   triangles: number;
@@ -223,6 +228,7 @@ export function summarizeSceneTree(root: SceneNode) {
 export function extractImportedMaterialBindings(root: THREE.Object3D) {
   const materialLibrary: Record<string, MaterialState> = {};
   const nodeMaterialBindings: Record<string, string> = {};
+  const materialTextureSlots: Record<string, MaterialTextureSlot[]> = {};
 
   root.traverse((object) => {
     if (!(object instanceof THREE.Mesh)) {
@@ -247,6 +253,13 @@ export function extractImportedMaterialBindings(root: THREE.Object3D) {
         emission: parseInt(emissive, 16) === 0 ? 0 : 1,
         opacity: getNumericMaterialProperty(material, "opacity", 1),
       };
+      materialTextureSlots[materialId] = Object.entries(material)
+        .filter(([, value]) => value instanceof THREE.Texture)
+        .map(([channel, value]) => ({
+          channel,
+          textureId: value.uuid,
+          textureName: value.name.trim() || `${material.name.trim() || materialId}_${channel}`,
+        }));
       nodeMaterialBindings[materialId] = materialId;
       if (index === 0) {
         nodeMaterialBindings[object.uuid] = materialId;
@@ -257,5 +270,6 @@ export function extractImportedMaterialBindings(root: THREE.Object3D) {
   return {
     materialLibrary,
     nodeMaterialBindings,
+    materialTextureSlots,
   };
 }

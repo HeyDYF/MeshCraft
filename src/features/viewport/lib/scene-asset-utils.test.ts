@@ -145,7 +145,13 @@ describe("disposeSceneResources", () => {
 });
 
 describe("extractImportedMaterialBindings", () => {
-  it("extracts imported material library entries and mesh-to-material bindings", () => {
+  it("extracts imported material library entries, mesh-to-material bindings, and texture slots", () => {
+    const colorMap = makeTexture();
+    colorMap.uuid = "albedo-uuid";
+    colorMap.name = "paint_albedo";
+    const normalMap = makeTexture();
+    normalMap.uuid = "normal-uuid";
+    normalMap.name = "paint_normal";
     const material = new THREE.MeshStandardMaterial({
       color: "#336699",
       metalness: 0.7,
@@ -153,6 +159,8 @@ describe("extractImportedMaterialBindings", () => {
       transparent: true,
       opacity: 0.8,
       emissive: new THREE.Color("#112233"),
+      map: colorMap,
+      normalMap,
     });
     material.name = "ImportedPaint";
 
@@ -176,6 +184,20 @@ describe("extractImportedMaterialBindings", () => {
     expect(bindings.nodeMaterialBindings).toEqual({
       [mesh.uuid]: `${mesh.uuid}-material-0`,
       [`${mesh.uuid}-material-0`]: `${mesh.uuid}-material-0`,
+    });
+    expect(bindings.materialTextureSlots).toEqual({
+      [`${mesh.uuid}-material-0`]: [
+        {
+          channel: "map",
+          textureId: "albedo-uuid",
+          textureName: "paint_albedo",
+        },
+        {
+          channel: "normalMap",
+          textureId: "normal-uuid",
+          textureName: "paint_normal",
+        },
+      ],
     });
   });
 });

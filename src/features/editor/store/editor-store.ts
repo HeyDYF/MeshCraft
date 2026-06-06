@@ -18,6 +18,7 @@ import type {
   DisplayState,
   EditorMode,
   MaterialState,
+  MaterialTextureSlot,
   PerformanceStats,
   SceneNode,
   ShadingMode,
@@ -41,6 +42,7 @@ type EditorState = {
   materialLibrary: Record<string, MaterialState>;
   importedMaterialLibrary: Record<string, MaterialState>;
   importedNodeMaterialBindings: Record<string, string>;
+  importedMaterialTextureSlots: Record<string, MaterialTextureSlot[]>;
   objectTransforms: Record<string, TransformState>;
   importedObjectTransforms: Record<string, TransformState>;
   sceneTree: SceneNode;
@@ -56,6 +58,7 @@ type EditorState = {
   setImportedMaterialBindings: (payload: {
     materialLibrary: Record<string, MaterialState>;
     nodeMaterialBindings: Record<string, string>;
+    materialTextureSlots: Record<string, MaterialTextureSlot[]>;
   }) => void;
   setSceneTree: (sceneTree: SceneNode) => void;
   setImportedObjectTransforms: (
@@ -82,6 +85,7 @@ export const useEditorStore = create<EditorState>((set) => ({
   materialLibrary: DEFAULT_MATERIAL_LIBRARY,
   importedMaterialLibrary: {},
   importedNodeMaterialBindings: {},
+  importedMaterialTextureSlots: {},
   objectTransforms: DEFAULT_PROCEDURAL_TRANSFORMS,
   importedObjectTransforms: {},
   sceneTree: SCENE_TREE,
@@ -134,6 +138,7 @@ export const useEditorStore = create<EditorState>((set) => ({
         activeMaterialId: null,
         importedMaterialLibrary: {},
         importedNodeMaterialBindings: {},
+        importedMaterialTextureSlots: {},
         selectedId: "imported-root",
         selectedName: name.replace(/\.[^.]+$/, ""),
         importedObjectTransforms: {},
@@ -158,6 +163,7 @@ export const useEditorStore = create<EditorState>((set) => ({
         materialLibrary: DEFAULT_MATERIAL_LIBRARY,
         importedMaterialLibrary: {},
         importedNodeMaterialBindings: {},
+        importedMaterialTextureSlots: {},
         objectTransforms: DEFAULT_PROCEDURAL_TRANSFORMS,
         importedObjectTransforms: {},
         sceneTree: SCENE_TREE,
@@ -172,10 +178,15 @@ export const useEditorStore = create<EditorState>((set) => ({
       importStatus: status,
       importError: errorMessage,
     }),
-  setImportedMaterialBindings: ({ materialLibrary, nodeMaterialBindings }) =>
+  setImportedMaterialBindings: ({
+    materialLibrary,
+    nodeMaterialBindings,
+    materialTextureSlots,
+  }) =>
     set({
       importedMaterialLibrary: materialLibrary,
       importedNodeMaterialBindings: nodeMaterialBindings,
+      importedMaterialTextureSlots: materialTextureSlots,
     }),
   setSceneTree: (sceneTree) => set({ sceneTree }),
   setImportedObjectTransforms: (importedObjectTransforms) =>

@@ -8,6 +8,7 @@ import {
 } from "@react-three/drei";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
+import { getSelectionCapabilities } from "../../editor/lib/editor-bindings";
 import { useEditorStore } from "../../editor/store/editor-store";
 import {
   buildImportedSceneTree,
@@ -217,6 +218,18 @@ export function SceneCanvas() {
       selectedId === "imported-root"
         ? rootRef.current
         : (objectMapRef.current.get(selectedId) ?? rootRef.current);
+    const selectedTransformable = getSelectionCapabilities(selectedId, {
+      importedTransformIds: Object.keys(importedObjectTransforms),
+    }).canTransform;
+    const importedHighlightBox = useMemo(() => new THREE.Box3(), []);
+    const importedHighlightSize = useMemo(() => new THREE.Vector3(), []);
+    const importedHighlightCenter = useMemo(() => new THREE.Vector3(), []);
+
+    if (activeObject && selectedTransformable) {
+      importedHighlightBox.setFromObject(activeObject);
+      importedHighlightBox.getSize(importedHighlightSize);
+      importedHighlightBox.getCenter(importedHighlightCenter);
+    }
 
     return (
       <>
@@ -240,6 +253,20 @@ export function SceneCanvas() {
             (importedObjectTransforms["imported-root"]?.scale.z ?? 1) *
               (display.lodPreview ? 0.92 : 1),
           ]}
+          onClick={(event: ThreeEvent<MouseEvent>) => {
+            event.stopPropagation();
+            setSelected(
+              "imported-root",
+              importedAssetName?.replace(/\.[^.]+$/, "") || "ImportedAsset",
+            );
+            setTransform(
+              importedObjectTransforms["imported-root"] ?? {
+                position: { x: 0, y: -1.15, z: 0 },
+                rotation: { x: 0, y: 0, z: 0 },
+                scale: { x: 1, y: 1, z: 1 },
+              },
+            );
+          }}
         >
           <primitive
             object={scene}
@@ -270,6 +297,26 @@ export function SceneCanvas() {
             }}
           />
         </group>
+        {selectedTransformable &&
+          activeObject &&
+          importedHighlightSize.lengthSq() > 0 &&
+          rootRef.current && (
+            <mesh
+              position={rootRef.current.worldToLocal(importedHighlightCenter.clone())}
+              scale={[
+                importedHighlightSize.x * 1.03,
+                importedHighlightSize.y * 1.03,
+                importedHighlightSize.z * 1.03,
+              ]}
+            >
+              <boxGeometry args={[1, 1, 1]} />
+              <meshBasicMaterial
+                color={selectedId === "imported-root" ? "#fbbf24" : "#67e8f9"}
+                wireframe
+                toneMapped={false}
+              />
+            </mesh>
+          )}
         {mode === "object" && display.showGizmo && activeObject && (
           <TransformControls
             object={activeObject}

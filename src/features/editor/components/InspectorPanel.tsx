@@ -11,7 +11,13 @@ import {
 import { useState, type ReactNode } from "react";
 import { getSelectionCapabilities } from "../lib/editor-bindings";
 import { useEditorStore } from "../store/editor-store";
-import type { DisplayState, MaterialState, ShadingMode, TransformState } from "../types";
+import type {
+  DisplayState,
+  MaterialState,
+  MaterialTextureSlot,
+  ShadingMode,
+  TransformState,
+} from "../types";
 
 function Section({
   title,
@@ -177,7 +183,10 @@ const SHADING: { id: ShadingMode; label: string }[] = [
 
 function TransformSection({ transform }: { transform: TransformState }) {
   const selectedId = useEditorStore((state) => state.selectedId);
-  const { canTransform } = getSelectionCapabilities(selectedId);
+  const importedObjectTransforms = useEditorStore((state) => state.importedObjectTransforms);
+  const { canTransform } = getSelectionCapabilities(selectedId, {
+    importedTransformIds: Object.keys(importedObjectTransforms),
+  });
 
   if (!canTransform) {
     return (
@@ -214,7 +223,12 @@ function TransformSection({ transform }: { transform: TransformState }) {
 function MaterialSection({ material }: { material: MaterialState | null }) {
   const setMaterialField = useEditorStore((state) => state.setMaterialField);
   const selectedId = useEditorStore((state) => state.selectedId);
-  const { canEditMaterial } = getSelectionCapabilities(selectedId);
+  const importedNodeMaterialBindings = useEditorStore(
+    (state) => state.importedNodeMaterialBindings,
+  );
+  const { canEditMaterial } = getSelectionCapabilities(selectedId, {
+    importedMaterialBindings: importedNodeMaterialBindings,
+  });
 
   if (!material || !canEditMaterial) {
     return (
@@ -244,6 +258,49 @@ function MaterialSection({ material }: { material: MaterialState | null }) {
       <Slider label="Roughness" value={material.roughness} onChange={(value) => setMaterialField("roughness", value)} />
       <Slider label="Emission" value={material.emission} onChange={(value) => setMaterialField("emission", value)} max={4} />
       <Slider label="Opacity" value={material.opacity} onChange={(value) => setMaterialField("opacity", value)} />
+    </div>
+  );
+}
+
+function TextureSlotsSection({
+  slots,
+  canInspect,
+}: {
+  slots: MaterialTextureSlot[];
+  canInspect: boolean;
+}) {
+  if (!canInspect) {
+    return (
+      <div className="rounded-sm bg-black/20 px-3 py-3 text-[11px] text-slate-500 ring-1 ring-white/10">
+        Select a bound material to inspect imported texture slots.
+      </div>
+    );
+  }
+
+  if (!slots.length) {
+    return (
+      <div className="rounded-sm bg-black/20 px-3 py-3 text-[11px] text-slate-500 ring-1 ring-white/10">
+        No texture maps are bound on the selected material.
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      {slots.map((slot) => (
+        <div
+          key={`${slot.textureId}-${slot.channel}`}
+          className="rounded-sm bg-black/20 px-3 py-2 ring-1 ring-white/10"
+        >
+          <div className="text-[10px] uppercase tracking-wide text-slate-600">
+            {slot.channel}
+          </div>
+          <div className="mt-1 font-mono text-[11px] text-slate-100">
+            {slot.textureName}
+          </div>
+          <div className="mt-1 font-mono text-[10px] text-slate-500">{slot.textureId}</div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -336,7 +393,9 @@ function SelectionSection() {
 
 export function InspectorPanel() {
   const selectedName = useEditorStore((state) => state.selectedName);
+  const selectedId = useEditorStore((state) => state.selectedId);
   const transform = useEditorStore((state) => state.transform);
+  const activeMaterialId = useEditorStore((state) => state.activeMaterialId);
   const material = useEditorStore((state) =>
     state.activeMaterialId
       ? state.materialLibrary[state.activeMaterialId] ??
@@ -344,7 +403,19 @@ export function InspectorPanel() {
         null
       : null,
   );
+  const importedNodeMaterialBindings = useEditorStore(
+    (state) => state.importedNodeMaterialBindings,
+  );
+  const importedMaterialTextureSlots = useEditorStore(
+    (state) => state.importedMaterialTextureSlots,
+  );
   const display = useEditorStore((state) => state.display);
+  const { canEditMaterial } = getSelectionCapabilities(selectedId, {
+    importedMaterialBindings: importedNodeMaterialBindings,
+  });
+  const textureSlots = activeMaterialId
+    ? importedMaterialTextureSlots[activeMaterialId] ?? []
+    : [];
 
   return (
     <aside className="mc-thin-scroll flex w-72 shrink-0 flex-col overflow-y-auto border-l border-white/10 bg-[#12171f]">
@@ -360,6 +431,10 @@ export function InspectorPanel() {
 
       <Section title="Material" icon={Palette}>
         <MaterialSection material={material} />
+      </Section>
+
+      <Section title="Textures" icon={Palette}>
+        <TextureSlotsSection slots={textureSlots} canInspect={canEditMaterial} />
       </Section>
 
       <Section title="Selection" icon={Info}>

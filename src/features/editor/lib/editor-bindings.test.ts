@@ -45,4 +45,26 @@ describe("getSelectionCapabilities", () => {
       canEditMaterial: false,
     });
   });
+
+  it("treats imported transform ids and imported material bindings as first-class editor selections", () => {
+    expect(
+      getSelectionCapabilities("imported-mesh-a", {
+        importedTransformIds: ["imported-mesh-a"],
+      }),
+    ).toEqual({
+      canTransform: true,
+      canEditMaterial: false,
+    });
+
+    expect(
+      getSelectionCapabilities("imported-material-a", {
+        importedMaterialBindings: {
+          "imported-material-a": "imported-material-a",
+        },
+      }),
+    ).toEqual({
+      canTransform: false,
+      canEditMaterial: true,
+    });
+  });
 });

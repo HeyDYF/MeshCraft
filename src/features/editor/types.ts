@@ -36,6 +36,12 @@ export type MaterialState = {
   opacity: number;
 };
 
+export type MaterialTextureSlot = {
+  channel: string;
+  textureId: string;
+  textureName: string;
+};
+
 export type DisplayState = {
   shading: ShadingMode;
   showGrid: boolean;

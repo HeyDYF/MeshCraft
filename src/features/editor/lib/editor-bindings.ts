@@ -1,5 +1,10 @@
 import type { MaterialState } from "../types";
 
+type SelectionCapabilityOptions = {
+  importedTransformIds?: Iterable<string>;
+  importedMaterialBindings?: Record<string, string>;
+};
+
 export const DEFAULT_MATERIAL_LIBRARY: Record<string, MaterialState> = {
   "mat-steel": {
     baseColor: "#697587",
@@ -38,9 +43,22 @@ export function getMaterialBindingForSelection(selectedId: string) {
   return MATERIAL_BINDINGS[selectedId] ?? null;
 }
 
-export function getSelectionCapabilities(selectedId: string) {
+export function getSelectionCapabilities(
+  selectedId: string,
+  options: SelectionCapabilityOptions = {},
+) {
+  const importedTransformIds = new Set(options.importedTransformIds ?? []);
+  const importedMaterialBindings = options.importedMaterialBindings ?? {};
+  const canTransform =
+    selectedId.startsWith("mesh-") ||
+    selectedId === "imported-root" ||
+    importedTransformIds.has(selectedId);
+  const canEditMaterial =
+    getMaterialBindingForSelection(selectedId) !== null ||
+    selectedId in importedMaterialBindings;
+
   return {
-    canTransform: selectedId.startsWith("mesh-") || selectedId === "imported-root",
-    canEditMaterial: getMaterialBindingForSelection(selectedId) !== null,
+    canTransform,
+    canEditMaterial,
   };
 }
