@@ -6,6 +6,12 @@ describe("resolvePreviewTargetIds", () => {
     expect(resolvePreviewTargetIds("mesh-core")).toEqual(["mesh-core"]);
   });
 
+  it("returns directly selected imported objects and groups", () => {
+    expect(resolvePreviewTargetIds("imported-root")).toEqual(["imported-root"]);
+    expect(resolvePreviewTargetIds("imported-node:0")).toEqual(["imported-node:0"]);
+    expect(resolvePreviewTargetIds("imported-node:0/2")).toEqual(["imported-node:0/2"]);
+  });
+
   it("maps procedural material nodes to all bound meshes", () => {
     expect(resolvePreviewTargetIds("mat-steel")).toEqual([
       "mesh-housing",

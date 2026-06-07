@@ -26,7 +26,11 @@ export function resolvePreviewTargetIds(
   selectedId: string,
   options: ResolvePreviewTargetOptions = {},
 ) {
-  if (selectedId === "imported-root" || selectedId.startsWith("mesh-")) {
+  if (
+    selectedId === "imported-root" ||
+    selectedId.startsWith("mesh-") ||
+    (selectedId.startsWith("imported-node:") && !selectedId.includes(":material:"))
+  ) {
     return [selectedId];
   }
 
