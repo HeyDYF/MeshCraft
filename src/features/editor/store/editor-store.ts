@@ -195,24 +195,33 @@ export const useEditorStore = create<EditorState>((set) => ({
       }
       revokeTextureOverrides(state.importedMaterialTextureOverrides);
 
+      const fallbackSelectedId =
+        state.selectedId in state.objectTransforms ? state.selectedId : "mesh-core";
+      const fallbackSelectedName =
+        fallbackSelectedId === state.selectedId
+          ? state.selectedName
+          : fallbackSelectedId === "mesh-core"
+            ? "Core_Rotor"
+            : state.selectedName;
+
       return {
         importedAssetName: null,
         importedAssetUrl: null,
         importStatus: "idle",
         importError: null,
-        activeMaterialId: getMaterialBindingForSelection("mesh-core"),
-        materialLibrary: DEFAULT_MATERIAL_LIBRARY,
+        activeMaterialId: getMaterialBindingForSelection(fallbackSelectedId),
+        materialLibrary: state.materialLibrary,
         importedMaterialLibrary: {},
         importedNodeMaterialBindings: {},
         importedMaterialTextureSlots: {},
         importedMaterialTextureOverrides: {},
-        objectTransforms: DEFAULT_PROCEDURAL_TRANSFORMS,
+        objectTransforms: state.objectTransforms,
         importedObjectTransforms: {},
         sceneTree: SCENE_TREE,
-        transformTool: DEFAULT_TRANSFORM_TOOL,
-        selectedId: "mesh-core",
-        selectedName: "Core_Rotor",
-        transform: getSelectedTransform("mesh-core", DEFAULT_PROCEDURAL_TRANSFORMS),
+        transformTool: state.transformTool,
+        selectedId: fallbackSelectedId,
+        selectedName: fallbackSelectedName,
+        transform: getSelectedTransform(fallbackSelectedId, state.objectTransforms),
         hasUnsavedChanges: true,
       };
     }),

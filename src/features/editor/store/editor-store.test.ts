@@ -126,6 +126,65 @@ describe("editor store unsaved changes workflow", () => {
     expect(useEditorStore.getState().importedAssetName).toBeNull();
   });
 
+  it("preserves procedural edits when unloading an imported asset", () => {
+    useEditorStore.setState({
+      selectedId: "mesh-housing",
+      selectedName: "Housing_Shell",
+      activeMaterialId: "mat-steel",
+      materialLibrary: {
+        ...useEditorStore.getState().materialLibrary,
+        "mat-steel": {
+          ...useEditorStore.getState().materialLibrary["mat-steel"],
+          baseColor: "#112233",
+        },
+      },
+      objectTransforms: {
+        ...useEditorStore.getState().objectTransforms,
+        "mesh-core": {
+          position: { x: 2, y: 3, z: 4 },
+          rotation: { x: 0.4, y: 0.5, z: 0.6 },
+          scale: { x: 1.5, y: 1.5, z: 1.5 },
+        },
+      },
+      importedAssetName: "robot.glb",
+      importedAssetUrl: "data:model/gltf-binary;base64,AAAA",
+      importedMaterialLibrary: {
+        "imported-node:0:material:0": {
+          baseColor: "#abcdef",
+          metalness: 0.4,
+          roughness: 0.6,
+          emission: 0,
+          opacity: 1,
+        },
+      },
+      importedObjectTransforms: {
+        "imported-root": {
+          position: { x: 0, y: -1.15, z: 0 },
+          rotation: { x: 0, y: 0, z: 0 },
+          scale: { x: 1, y: 1, z: 1 },
+        },
+      },
+      sceneTree: {
+        id: "imported-root",
+        name: "robot",
+        kind: "group",
+        children: [],
+      },
+    });
+
+    useEditorStore.getState().clearImportedAsset();
+
+    expect(useEditorStore.getState().materialLibrary["mat-steel"].baseColor).toBe("#112233");
+    expect(useEditorStore.getState().objectTransforms["mesh-core"].position).toEqual({
+      x: 2,
+      y: 3,
+      z: 4,
+    });
+    expect(useEditorStore.getState().importedAssetName).toBeNull();
+    expect(useEditorStore.getState().importedMaterialLibrary).toEqual({});
+    expect(useEditorStore.getState().sceneTree.id).toBe("root");
+  });
+
   it("keeps loaded snapshots pristine", () => {
     useEditorStore.getState().applyProjectSnapshot({
       version: 1,
