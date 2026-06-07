@@ -16,7 +16,9 @@ import { useRef, useState, type ChangeEvent, type ReactNode } from "react";
 import { deriveAnalyzeSummary } from "../lib/analyze-mode";
 import { getSelectionCapabilities } from "../lib/editor-bindings";
 import { readFileAsDataUrl } from "../lib/import-file";
-import { getImportedMaterialSlotsForSelection } from "../lib/imported-material-slots";
+import {
+  getImportedMaterialSlotOptions,
+} from "../lib/imported-material-slots";
 import { isSupportedTextureFile } from "../lib/texture-overrides";
 import { getCopy } from "../lib/ui-copy";
 import { useEditorStore } from "../store/editor-store";
@@ -243,13 +245,15 @@ function MaterialSection({ material }: { material: MaterialState | null }) {
   const importedMaterialLibrary = useEditorStore(
     (state) => state.importedMaterialLibrary,
   );
+  const sceneTree = useEditorStore((state) => state.sceneTree);
   const locale = useEditorStore((state) => state.locale);
   const { canEditMaterial } = getSelectionCapabilities(selectedId, {
     importedMaterialBindings: importedNodeMaterialBindings,
   });
-  const importedMaterialSlots = getImportedMaterialSlotsForSelection(
+  const importedMaterialSlots = getImportedMaterialSlotOptions(
     selectedId,
     importedMaterialLibrary,
+    sceneTree,
   );
 
   if (!material || !canEditMaterial) {
@@ -268,20 +272,22 @@ function MaterialSection({ material }: { material: MaterialState | null }) {
             {getCopy(locale, "inspector.materialSlots")}
           </div>
           <div className="grid grid-cols-2 gap-1.5">
-            {importedMaterialSlots.map((materialSlotId, index) => {
-              const active = materialSlotId === activeMaterialId;
+            {importedMaterialSlots.map((slot) => {
+              const active = slot.materialId === activeMaterialId;
 
               return (
                 <button
-                  key={materialSlotId}
-                  onClick={() => setActiveMaterialId(materialSlotId)}
+                  key={slot.materialId}
+                  onClick={() => setActiveMaterialId(slot.materialId)}
                   className={`rounded-sm px-2.5 py-2 text-[12px] transition-colors ${
                     active
                       ? "bg-cyan-400/10 text-cyan-300 ring-1 ring-cyan-300/30"
                       : "bg-black/20 text-slate-500 ring-1 ring-white/10 hover:text-slate-100"
                   }`}
+                  title={slot.materialId}
                 >
-                  {getCopy(locale, "inspector.slot")} {index + 1}
+                  {getCopy(locale, "inspector.slot")} {slot.slotIndex + 1}
+                  {slot.materialName ? ` · ${slot.materialName}` : ""}
                 </button>
               );
             })}
@@ -596,10 +602,23 @@ function SelectionSection() {
   const selectedIds = useEditorStore((state) => state.selectedIds);
   const activeMaterialId = useEditorStore((state) => state.activeMaterialId);
   const sceneTree = useEditorStore((state) => state.sceneTree);
+  const importedMaterialLibrary = useEditorStore(
+    (state) => state.importedMaterialLibrary,
+  );
   const mode = useEditorStore((state) => state.mode);
   const locale = useEditorStore((state) => state.locale);
   const summary = deriveAnalyzeSummary(sceneTree, selectedId, activeMaterialId);
   const pathLabel = summary.selection.path.join(" / ");
+  const activeImportedSlot = activeMaterialId
+    ? getImportedMaterialSlotOptions(selectedId, importedMaterialLibrary, sceneTree).find(
+        (slot) => slot.materialId === activeMaterialId,
+      ) ?? null
+    : null;
+  const materialSlotLabel = activeImportedSlot
+    ? `${getCopy(locale, "inspector.slot")} ${activeImportedSlot.slotIndex + 1}${
+        activeImportedSlot.materialName ? ` · ${activeImportedSlot.materialName}` : ""
+      }`
+    : activeMaterialId;
 
   return (
     <div className="space-y-2 rounded-sm bg-black/20 px-3 py-3 ring-1 ring-white/10">
@@ -617,7 +636,7 @@ function SelectionSection() {
       <div className="pt-1 text-[12px] text-slate-500">
         {getCopy(locale, "inspector.materialSlot")}:{" "}
         <span className="font-mono text-[12px] text-slate-300">
-          {activeMaterialId ?? getCopy(locale, "inspector.importedUnbound")}
+          {materialSlotLabel ?? getCopy(locale, "inspector.importedUnbound")}
         </span>
       </div>
       {mode === "analyze" && (
