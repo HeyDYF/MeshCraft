@@ -13,12 +13,13 @@ import {
 import { useState } from "react";
 import { getCopy } from "../lib/ui-copy";
 import { useEditorStore } from "../store/editor-store";
-import type { NodeKind, SceneNode } from "../types";
+import type { Locale, NodeKind, SceneNode } from "../types";
 import { summarizeSceneTree } from "../../viewport/lib/scene-asset-utils";
 import {
+  collectRelatedSceneNodeIds,
   filterSceneTreeByQuery,
+  filterSceneTreeByRelatedSelection,
   getScenePanelTreeForTab,
-  type ScenePanelTab,
 } from "../lib/scene-panel-view";
 
 const KIND_ICON: Record<NodeKind, typeof Box> = {
@@ -35,9 +36,13 @@ const TABS = ["scene", "assets", "materials"] as const;
 function TreeRow({
   node,
   depth,
+  relatedIds,
+  locale,
 }: {
   node: SceneNode;
   depth: number;
+  relatedIds: Set<string>;
+  locale: Locale;
 }) {
   const [open, setOpen] = useState(true);
   const selectedId = useEditorStore((state) => state.selectedId);
@@ -48,6 +53,8 @@ function TreeRow({
   const hasChildren = Boolean(node.children?.length);
   const selected = selectedIds.includes(node.id);
   const primarySelected = selectedId === node.id;
+  const related = relatedIds.has(node.id);
+  const showRelatedEmphasis = related && !selected;
 
   return (
     <div>
@@ -63,7 +70,9 @@ function TreeRow({
         className={`group relative flex cursor-pointer items-center gap-1.5 py-1.5 pr-2 text-[14px] transition-colors ${
           selected
             ? "bg-cyan-400/12 text-[color:var(--mc-text)]"
-            : "text-[color:var(--mc-text-muted)] hover:bg-[color:var(--mc-hover)] hover:text-[color:var(--mc-text)]"
+            : showRelatedEmphasis
+              ? "bg-cyan-400/6 text-[color:var(--mc-text)] hover:bg-cyan-400/10"
+              : "text-[color:var(--mc-text-muted)] hover:bg-[color:var(--mc-hover)] hover:text-[color:var(--mc-text)]"
         }`}
         style={{ paddingLeft: depth * 14 + 8 }}
       >
@@ -98,6 +107,11 @@ function TreeRow({
           strokeWidth={1.8}
         />
         <span className="truncate font-mono">{node.name}</span>
+        {showRelatedEmphasis && (
+          <span className="rounded-sm bg-cyan-400/10 px-1.5 py-0.5 text-[10px] font-mono uppercase tracking-wide text-cyan-300 ring-1 ring-cyan-300/20">
+            {getCopy(locale, "scenePanel.related")}
+          </span>
+        )}
         {node.tris != null && (
           <span className="ml-auto shrink-0 font-mono text-[12px] text-[color:var(--mc-text-subtle)]">
             {(node.tris / 1000).toFixed(0)}K
@@ -107,7 +121,13 @@ function TreeRow({
       {hasChildren && open && (
         <div>
           {node.children?.map((child) => (
-            <TreeRow key={child.id} node={child} depth={depth + 1} />
+            <TreeRow
+              key={child.id}
+              node={child}
+              depth={depth + 1}
+              relatedIds={relatedIds}
+              locale={locale}
+            />
           ))}
         </div>
       )}
@@ -117,14 +137,21 @@ function TreeRow({
 
 export function ScenePanel() {
   const locale = useEditorStore((state) => state.locale);
-  const [tab, setTab] = useState<ScenePanelTab>("scene");
-  const [query, setQuery] = useState("");
+  const tab = useEditorStore((state) => state.scenePanelTab);
+  const query = useEditorStore((state) => state.scenePanelQuery);
+  const relatedOnly = useEditorStore((state) => state.scenePanelRelatedOnly);
+  const setTab = useEditorStore((state) => state.setScenePanelTab);
+  const setQuery = useEditorStore((state) => state.setScenePanelQuery);
+  const setRelatedOnly = useEditorStore((state) => state.setScenePanelRelatedOnly);
+  const selectedId = useEditorStore((state) => state.selectedId);
   const sceneTree = useEditorStore((state) => state.sceneTree);
-  const filteredTree = filterSceneTreeByQuery(
-    getScenePanelTreeForTab(sceneTree, tab),
-    query,
-  );
-  const summary = summarizeSceneTree(filteredTree ?? getScenePanelTreeForTab(sceneTree, tab));
+  const tabTree = getScenePanelTreeForTab(sceneTree, tab);
+  const relatedIds = collectRelatedSceneNodeIds(tabTree, selectedId, tab);
+  const relatedTree = relatedOnly
+    ? filterSceneTreeByRelatedSelection(tabTree, selectedId, tab) ?? tabTree
+    : tabTree;
+  const filteredTree = filterSceneTreeByQuery(relatedTree, query);
+  const summary = summarizeSceneTree(filteredTree ?? relatedTree);
 
   return (
     <aside className="flex w-64 shrink-0 flex-col border-r border-[color:var(--mc-border)] bg-[color:var(--mc-panel)]">
@@ -161,11 +188,22 @@ export function ScenePanel() {
             className="w-full bg-transparent font-mono text-[13px] text-[color:var(--mc-text)] outline-none placeholder:text-[color:var(--mc-text-subtle)]"
           />
         </label>
+        <button
+          onClick={() => setRelatedOnly(!relatedOnly)}
+          className={`mt-2 inline-flex items-center gap-1.5 rounded-sm px-2.5 py-1.5 text-[12px] font-medium ring-1 transition-colors ${
+            relatedOnly
+              ? "bg-cyan-400/10 text-cyan-300 ring-cyan-300/30"
+              : "bg-[color:var(--mc-soft)] text-[color:var(--mc-text-muted)] ring-[color:var(--mc-border)] hover:text-[color:var(--mc-text)]"
+          }`}
+        >
+          <Layers className="size-3" strokeWidth={1.8} />
+          {getCopy(locale, "scenePanel.relatedOnly")}
+        </button>
       </div>
 
       <div className="mc-thin-scroll flex-1 overflow-y-auto py-1">
         {filteredTree ? (
-          <TreeRow node={filteredTree} depth={0} />
+          <TreeRow node={filteredTree} depth={0} relatedIds={relatedIds} locale={locale} />
         ) : (
           <div className="px-3 py-4 font-mono text-[13px] text-[color:var(--mc-text-muted)]">
             {getCopy(locale, "scenePanel.noNodesMatch", query)}

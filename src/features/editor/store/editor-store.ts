@@ -5,6 +5,10 @@ import {
   resolveSelectionMaterialBinding,
 } from "../lib/editor-bindings";
 import type { ImportStatus } from "../lib/import-status";
+import {
+  findSceneNodeById,
+  type ScenePanelTab,
+} from "../lib/scene-panel-view";
 import { DEFAULT_TRANSFORM_TOOL } from "../lib/transform-tool";
 import {
   DEFAULT_PROCEDURAL_TRANSFORMS,
@@ -55,6 +59,9 @@ type EditorHistoryEntry = {
   objectTransforms: Record<string, TransformState>;
   importedObjectTransforms: Record<string, TransformState>;
   sceneTree: SceneNode;
+  scenePanelTab: ScenePanelTab;
+  scenePanelQuery: string;
+  scenePanelRelatedOnly: boolean;
   transformTool: TransformTool;
   transform: TransformState;
   display: DisplayState;
@@ -110,6 +117,9 @@ function captureHistoryEntry(state: EditorState): EditorHistoryEntry {
     objectTransforms: state.objectTransforms,
     importedObjectTransforms: state.importedObjectTransforms,
     sceneTree: state.sceneTree,
+    scenePanelTab: state.scenePanelTab,
+    scenePanelQuery: state.scenePanelQuery,
+    scenePanelRelatedOnly: state.scenePanelRelatedOnly,
     transformTool: state.transformTool,
     transform: state.transform,
     display: state.display,
@@ -152,6 +162,9 @@ type EditorState = {
   objectTransforms: Record<string, TransformState>;
   importedObjectTransforms: Record<string, TransformState>;
   sceneTree: SceneNode;
+  scenePanelTab: ScenePanelTab;
+  scenePanelQuery: string;
+  scenePanelRelatedOnly: boolean;
   transformTool: TransformTool;
   transform: TransformState;
   display: DisplayState;
@@ -185,6 +198,10 @@ type EditorState = {
   ) => void;
   clearImportedTextureOverride: (materialId: string, channel: string) => void;
   setSceneTree: (sceneTree: SceneNode) => void;
+  setScenePanelTab: (tab: ScenePanelTab) => void;
+  setScenePanelQuery: (query: string) => void;
+  setScenePanelRelatedOnly: (value: boolean) => void;
+  revealInOutliner: (id: string, tab?: ScenePanelTab) => void;
   setImportedObjectTransforms: (
     importedObjectTransforms: Record<string, TransformState>,
   ) => void;
@@ -225,6 +242,9 @@ export const useEditorStore = create<EditorState>((set) => ({
   objectTransforms: DEFAULT_PROCEDURAL_TRANSFORMS,
   importedObjectTransforms: {},
   sceneTree: SCENE_TREE,
+  scenePanelTab: "scene",
+  scenePanelQuery: "",
+  scenePanelRelatedOnly: false,
   transformTool: DEFAULT_TRANSFORM_TOOL,
   transform: getSelectedTransform("mesh-core", DEFAULT_PROCEDURAL_TRANSFORMS),
   display: DEFAULT_DISPLAY,
@@ -404,6 +424,36 @@ export const useEditorStore = create<EditorState>((set) => ({
       };
     }),
   setSceneTree: (sceneTree) => set({ sceneTree }),
+  setScenePanelTab: (scenePanelTab) => set({ scenePanelTab }),
+  setScenePanelQuery: (scenePanelQuery) => set({ scenePanelQuery }),
+  setScenePanelRelatedOnly: (scenePanelRelatedOnly) => set({ scenePanelRelatedOnly }),
+  revealInOutliner: (id, tab) =>
+    set((state) => {
+      const node = findSceneNodeById(state.sceneTree, id);
+
+      if (!node) {
+        return {};
+      }
+
+      return {
+        scenePanelTab: tab ?? state.scenePanelTab,
+        scenePanelQuery: "",
+        scenePanelRelatedOnly: false,
+        selectedId: id,
+        selectedIds: [id],
+        selectedName: node.name,
+        activeMaterialId: resolveSelectionMaterialBinding(
+          id,
+          state.importedNodeMaterialBindings,
+        ),
+        transform: resolveSelectionTransform(
+          id,
+          state.objectTransforms,
+          state.importedObjectTransforms,
+          state.transform,
+        ),
+      };
+    }),
   setImportedObjectTransforms: (importedObjectTransforms) =>
     set({ importedObjectTransforms }),
   setTransformTool: (transformTool) =>

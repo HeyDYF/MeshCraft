@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { SceneNode } from "../types";
 import {
+  collectRelatedSceneNodeIds,
   filterSceneTreeByQuery,
+  filterSceneTreeByRelatedSelection,
   getScenePanelTreeForTab,
   type ScenePanelTab,
 } from "./scene-panel-view";
@@ -121,5 +123,53 @@ describe("filterSceneTreeByQuery", () => {
 
   it("returns null when nothing matches", () => {
     expect(filterSceneTreeByQuery(TREE, "does-not-exist")).toBeNull();
+  });
+});
+
+describe("filterSceneTreeByRelatedSelection", () => {
+  it("keeps only the owning imported object materials in the materials tab", () => {
+    const filtered = filterSceneTreeByRelatedSelection(
+      getScenePanelTreeForTab(IMPORTED_TREE, "materials"),
+      "imported-node:0/0",
+      "materials",
+    );
+
+    expect(filtered?.children?.[0]?.name).toBe("Materials");
+    expect(filtered?.children?.[0]?.children?.map((node) => node.id)).toEqual([
+      "imported-node:0/0:material:0",
+    ]);
+  });
+
+  it("keeps only the owning imported material texture in the assets tab", () => {
+    const filtered = filterSceneTreeByRelatedSelection(
+      getScenePanelTreeForTab(IMPORTED_TREE, "assets"),
+      "imported-node:0/0:material:0",
+      "assets",
+    );
+
+    expect(filtered?.children?.map((node) => node.name)).toEqual(["Scene", "Textures"]);
+    expect(filtered?.children?.[1]?.children?.map((node) => node.id)).toEqual([
+      "imported-node:0/0:material:0:texture:map",
+    ]);
+  });
+});
+
+describe("collectRelatedSceneNodeIds", () => {
+  it("returns the owning object, material, and texture ids for imported texture selections", () => {
+    expect(
+      Array.from(
+        collectRelatedSceneNodeIds(
+          getScenePanelTreeForTab(IMPORTED_TREE, "assets"),
+          "imported-node:0/0:material:0:texture:map",
+          "assets",
+        ),
+      ),
+    ).toEqual(
+      expect.arrayContaining([
+        "imported-node:0/0",
+        "imported-node:0/0:material:0",
+        "imported-node:0/0:material:0:texture:map",
+      ]),
+    );
   });
 });

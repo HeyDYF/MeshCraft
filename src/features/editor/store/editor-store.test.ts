@@ -264,6 +264,54 @@ describe("editor store unsaved changes workflow", () => {
     expect(useEditorStore.getState().hasUnsavedChanges).toBe(false);
   });
 
+  it("reveals imported material nodes in the outliner without marking the project dirty", () => {
+    useEditorStore.setState({
+      scenePanelTab: "scene",
+      scenePanelQuery: "stale",
+      scenePanelRelatedOnly: true,
+      selectedId: "imported-node:0/0",
+      selectedIds: ["imported-node:0/0"],
+      selectedName: "HousingShell",
+      activeMaterialId: "imported-node:0/0:material:0",
+      importedNodeMaterialBindings: {
+        "imported-node:0/0": "imported-node:0/0:material:0",
+      },
+      sceneTree: {
+        id: "imported-root",
+        name: "ImportedAsset",
+        kind: "group",
+        children: [
+          {
+            id: "imported-group:materials",
+            name: "Materials",
+            kind: "group",
+            children: [
+              {
+                id: "imported-node:0/0:material:0",
+                name: "HousingShell · Slot 1 · ShellMaterial",
+                kind: "material",
+              },
+            ],
+          },
+        ],
+      },
+      hasUnsavedChanges: false,
+    });
+
+    useEditorStore
+      .getState()
+      .revealInOutliner("imported-node:0/0:material:0", "materials");
+
+    expect(useEditorStore.getState().scenePanelTab).toBe("materials");
+    expect(useEditorStore.getState().scenePanelQuery).toBe("");
+    expect(useEditorStore.getState().scenePanelRelatedOnly).toBe(false);
+    expect(useEditorStore.getState().selectedId).toBe("imported-node:0/0:material:0");
+    expect(useEditorStore.getState().selectedName).toBe(
+      "HousingShell · Slot 1 · ShellMaterial",
+    );
+    expect(useEditorStore.getState().hasUnsavedChanges).toBe(false);
+  });
+
   it("preserves locale and theme when resetting the project", () => {
     useEditorStore.getState().setLocale("zh-CN");
     useEditorStore.getState().setTheme("light");

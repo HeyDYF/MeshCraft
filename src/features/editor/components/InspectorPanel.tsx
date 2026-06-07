@@ -31,6 +31,18 @@ import type {
   TransformState,
 } from "../types";
 
+function getRevealTabForNodeId(nodeId: string) {
+  if (nodeId.includes(":texture:")) {
+    return "assets" as const;
+  }
+
+  if (nodeId.includes(":material:") || nodeId.startsWith("mat-")) {
+    return "materials" as const;
+  }
+
+  return "scene" as const;
+}
+
 function Section({
   title,
   icon: Icon,
@@ -247,6 +259,7 @@ function MaterialSection({ material }: { material: MaterialState | null }) {
   );
   const sceneTree = useEditorStore((state) => state.sceneTree);
   const locale = useEditorStore((state) => state.locale);
+  const revealInOutliner = useEditorStore((state) => state.revealInOutliner);
   const { canEditMaterial } = getSelectionCapabilities(selectedId, {
     importedMaterialBindings: importedNodeMaterialBindings,
   });
@@ -314,6 +327,14 @@ function MaterialSection({ material }: { material: MaterialState | null }) {
       <Slider label={getCopy(locale, "inspector.roughness")} value={material.roughness} onChange={(value) => setMaterialField("roughness", value)} />
       <Slider label={getCopy(locale, "inspector.emission")} value={material.emission} onChange={(value) => setMaterialField("emission", value)} max={4} />
       <Slider label={getCopy(locale, "inspector.opacity")} value={material.opacity} onChange={(value) => setMaterialField("opacity", value)} />
+      {activeMaterialId && (
+        <button
+          onClick={() => revealInOutliner(activeMaterialId, "materials")}
+          className="inline-flex items-center justify-center rounded-sm bg-black/30 px-2.5 py-1.5 text-[11px] font-medium text-slate-200 ring-1 ring-white/10 transition-colors hover:bg-white/5"
+        >
+          {getCopy(locale, "inspector.revealInOutliner")}
+        </button>
+      )}
     </div>
   );
 }
@@ -336,6 +357,7 @@ function TextureSlotsSection({
     (state) => state.clearImportedTextureOverride,
   );
   const setImportStatus = useEditorStore((state) => state.setImportStatus);
+  const revealInOutliner = useEditorStore((state) => state.revealInOutliner);
   const locale = useEditorStore((state) => state.locale);
 
   if (!canInspect) {
@@ -443,6 +465,16 @@ function TextureSlotsSection({
                 <RefreshCcw className="size-3" strokeWidth={1.8} />
                 {getCopy(locale, "inspector.reset")}
               </button>
+              {activeMaterialId && (
+                <button
+                  onClick={() =>
+                    revealInOutliner(`${activeMaterialId}:texture:${slot.channel}`, "assets")
+                  }
+                  className="inline-flex items-center gap-1 rounded-sm bg-black/20 px-2.5 py-1.5 text-[11px] font-medium text-slate-400 ring-1 ring-white/10 transition-colors hover:bg-white/5 hover:text-slate-100"
+                >
+                  {getCopy(locale, "inspector.revealInOutliner")}
+                </button>
+              )}
             </div>
           </div>
         );
@@ -607,6 +639,7 @@ function SelectionSection() {
   );
   const mode = useEditorStore((state) => state.mode);
   const locale = useEditorStore((state) => state.locale);
+  const revealInOutliner = useEditorStore((state) => state.revealInOutliner);
   const summary = deriveAnalyzeSummary(sceneTree, selectedId, activeMaterialId);
   const pathLabel = summary.selection.path.join(" / ");
   const activeImportedSlot = activeMaterialId
@@ -627,6 +660,12 @@ function SelectionSection() {
       </div>
       <div className="font-mono text-[12px] text-slate-100">{selectedName}</div>
       <div className="font-mono text-[11px] text-slate-500">{selectedId}</div>
+      <button
+        onClick={() => revealInOutliner(selectedId, getRevealTabForNodeId(selectedId))}
+        className="inline-flex w-fit items-center justify-center rounded-sm bg-black/30 px-2.5 py-1.5 text-[11px] font-medium text-slate-200 ring-1 ring-white/10 transition-colors hover:bg-white/5"
+      >
+        {getCopy(locale, "inspector.revealInOutliner")}
+      </button>
       <div className="pt-1 text-[12px] text-slate-500">
         {getCopy(locale, "inspector.selectionCount")}:{" "}
         <span className="font-mono text-[12px] text-slate-300">
