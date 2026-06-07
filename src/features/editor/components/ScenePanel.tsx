@@ -8,11 +8,17 @@ import {
   Layers,
   Lightbulb,
   Palette,
+  Search,
 } from "lucide-react";
 import { useState } from "react";
 import { useEditorStore } from "../store/editor-store";
 import type { NodeKind, SceneNode } from "../types";
 import { summarizeSceneTree } from "../../viewport/lib/scene-asset-utils";
+import {
+  filterSceneTreeByQuery,
+  getScenePanelTreeForTab,
+  type ScenePanelTab,
+} from "../lib/scene-panel-view";
 
 const KIND_ICON: Record<NodeKind, typeof Box> = {
   group: Boxes,
@@ -97,9 +103,14 @@ function TreeRow({
 }
 
 export function ScenePanel() {
-  const [tab, setTab] = useState<(typeof TABS)[number]["id"]>("scene");
+  const [tab, setTab] = useState<ScenePanelTab>("scene");
+  const [query, setQuery] = useState("");
   const sceneTree = useEditorStore((state) => state.sceneTree);
-  const summary = summarizeSceneTree(sceneTree);
+  const filteredTree = filterSceneTreeByQuery(
+    getScenePanelTreeForTab(sceneTree, tab),
+    query,
+  );
+  const summary = summarizeSceneTree(filteredTree ?? getScenePanelTreeForTab(sceneTree, tab));
 
   return (
     <aside className="flex w-64 shrink-0 flex-col border-r border-white/10 bg-[#12171f]">
@@ -126,8 +137,26 @@ export function ScenePanel() {
         </span>
       </div>
 
+      <div className="border-b border-white/10 px-3 py-2">
+        <label className="flex items-center gap-2 rounded-sm bg-black/20 px-2 py-1.5 ring-1 ring-white/10 focus-within:ring-cyan-300/40">
+          <Search className="size-3.5 text-slate-500" strokeWidth={1.8} />
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search nodes"
+            className="w-full bg-transparent font-mono text-[11px] text-slate-100 outline-none placeholder:text-slate-600"
+          />
+        </label>
+      </div>
+
       <div className="mc-thin-scroll flex-1 overflow-y-auto py-1">
-        <TreeRow node={sceneTree} depth={0} />
+        {filteredTree ? (
+          <TreeRow node={filteredTree} depth={0} />
+        ) : (
+          <div className="px-3 py-4 font-mono text-[11px] text-slate-500">
+            No nodes match "{query}".
+          </div>
+        )}
       </div>
 
       <div className="border-t border-white/10 px-3 py-2 font-mono text-[10px] text-slate-500">
