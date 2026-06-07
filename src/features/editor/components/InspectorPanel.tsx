@@ -16,6 +16,7 @@ import { useRef, useState, type ChangeEvent, type ReactNode } from "react";
 import { deriveAnalyzeSummary } from "../lib/analyze-mode";
 import { getSelectionCapabilities } from "../lib/editor-bindings";
 import { readFileAsDataUrl } from "../lib/import-file";
+import { getImportedMaterialSlotsForSelection } from "../lib/imported-material-slots";
 import { isSupportedTextureFile } from "../lib/texture-overrides";
 import { getCopy } from "../lib/ui-copy";
 import { useEditorStore } from "../store/editor-store";
@@ -233,14 +234,23 @@ function TransformSection({ transform }: { transform: TransformState }) {
 
 function MaterialSection({ material }: { material: MaterialState | null }) {
   const setMaterialField = useEditorStore((state) => state.setMaterialField);
+  const setActiveMaterialId = useEditorStore((state) => state.setActiveMaterialId);
   const selectedId = useEditorStore((state) => state.selectedId);
+  const activeMaterialId = useEditorStore((state) => state.activeMaterialId);
   const importedNodeMaterialBindings = useEditorStore(
     (state) => state.importedNodeMaterialBindings,
+  );
+  const importedMaterialLibrary = useEditorStore(
+    (state) => state.importedMaterialLibrary,
   );
   const locale = useEditorStore((state) => state.locale);
   const { canEditMaterial } = getSelectionCapabilities(selectedId, {
     importedMaterialBindings: importedNodeMaterialBindings,
   });
+  const importedMaterialSlots = getImportedMaterialSlotsForSelection(
+    selectedId,
+    importedMaterialLibrary,
+  );
 
   if (!material || !canEditMaterial) {
     return (
@@ -252,6 +262,32 @@ function MaterialSection({ material }: { material: MaterialState | null }) {
 
   return (
     <div className="space-y-3">
+      {importedMaterialSlots.length > 1 && (
+        <div className="space-y-2">
+          <div className="text-[12px] uppercase tracking-wide text-slate-600">
+            {getCopy(locale, "inspector.materialSlots")}
+          </div>
+          <div className="grid grid-cols-2 gap-1.5">
+            {importedMaterialSlots.map((materialSlotId, index) => {
+              const active = materialSlotId === activeMaterialId;
+
+              return (
+                <button
+                  key={materialSlotId}
+                  onClick={() => setActiveMaterialId(materialSlotId)}
+                  className={`rounded-sm px-2.5 py-2 text-[12px] transition-colors ${
+                    active
+                      ? "bg-cyan-400/10 text-cyan-300 ring-1 ring-cyan-300/30"
+                      : "bg-black/20 text-slate-500 ring-1 ring-white/10 hover:text-slate-100"
+                  }`}
+                >
+                  {getCopy(locale, "inspector.slot")} {index + 1}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
       <div className="flex items-center gap-2">
         <span className="w-24 shrink-0 text-[13px] text-slate-500">
           {getCopy(locale, "inspector.baseColor")}

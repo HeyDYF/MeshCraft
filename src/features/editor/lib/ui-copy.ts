@@ -62,6 +62,8 @@ const UI_COPY: Record<Locale, CopyTree> = {
         "Transform editing is available for mesh objects and imported scene roots.",
       materialHelp:
         "Select a procedural mesh or material slot to edit bound material values.",
+      materialSlots: "Material Slots",
+      slot: "Slot",
       baseColor: "Base Color",
       metalness: "Metalness",
       roughness: "Roughness",
@@ -197,6 +199,8 @@ const UI_COPY: Record<Locale, CopyTree> = {
       scale: "缩放",
       transformHelp: "只有网格对象和导入场景根节点支持变换编辑。",
       materialHelp: "请选择程序化网格或材质槽位以编辑绑定材质。",
+      materialSlots: "材质槽位",
+      slot: "槽位",
       baseColor: "基础颜色",
       metalness: "金属度",
       roughness: "粗糙度",
