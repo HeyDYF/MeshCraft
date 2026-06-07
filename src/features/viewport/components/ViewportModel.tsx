@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import type { Group, Mesh } from "three";
 import { DoubleSide, Vector3 } from "three";
 import { getSelectionCapabilities } from "../../editor/lib/editor-bindings";
+import { resolvePreviewTargetId } from "../../editor/lib/selection-preview";
 import { useEditorStore } from "../../editor/store/editor-store";
 import type { TransformState } from "../../editor/types";
 import { HologramShell } from "./HologramShell";
@@ -91,15 +92,16 @@ export function ViewportModel({ exportRootRef }: { exportRootRef?: RefObject<Gro
     () => (useNormalsTint ? "#7fb5ff" : rotorMaterial.baseColor),
     [rotorMaterial.baseColor, useNormalsTint],
   );
+  const previewTargetId = resolvePreviewTargetId(selectedId);
   const selectedTransformable = getSelectionCapabilities(selectedId).canTransform;
   const selectedObject =
-    selectedId === "mesh-housing"
+    previewTargetId === "mesh-housing"
       ? housingRef.current
-      : selectedId === "mesh-core"
+      : previewTargetId === "mesh-core"
         ? rotor.current
-        : selectedId === "mesh-vents"
+        : previewTargetId === "mesh-vents"
           ? ventsRef.current
-          : selectedId === "mesh-bolts"
+          : previewTargetId === "mesh-bolts"
             ? boltsRef.current
             : null;
   const detail = DETAIL_CONFIG[lodLevel];

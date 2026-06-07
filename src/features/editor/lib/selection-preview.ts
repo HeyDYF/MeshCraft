@@ -1,0 +1,49 @@
+const PROCEDURAL_MATERIAL_PREVIEW_TARGETS: Record<string, string> = {
+  "mat-steel": "mesh-housing",
+  "mat-carbon": "mesh-core",
+  "mat-glow": "mesh-housing",
+};
+
+type ResolvePreviewTargetOptions = {
+  importedNodeMaterialBindings?: Record<string, string>;
+};
+
+function findImportedObjectForMaterial(
+  materialId: string,
+  importedNodeMaterialBindings: Record<string, string>,
+) {
+  return (
+    Object.entries(importedNodeMaterialBindings).find(
+      ([nodeId, bindingId]) =>
+        nodeId.startsWith("imported-node:") &&
+        !nodeId.includes(":material:") &&
+        bindingId === materialId,
+    )?.[0] ?? null
+  );
+}
+
+export function resolvePreviewTargetId(
+  selectedId: string,
+  options: ResolvePreviewTargetOptions = {},
+) {
+  if (selectedId === "imported-root" || selectedId.startsWith("mesh-")) {
+    return selectedId;
+  }
+
+  if (selectedId in PROCEDURAL_MATERIAL_PREVIEW_TARGETS) {
+    return PROCEDURAL_MATERIAL_PREVIEW_TARGETS[selectedId];
+  }
+
+  const importedNodeMaterialBindings = options.importedNodeMaterialBindings ?? {};
+
+  if (selectedId.includes(":texture:")) {
+    const materialId = selectedId.slice(0, selectedId.lastIndexOf(":texture:"));
+    return findImportedObjectForMaterial(materialId, importedNodeMaterialBindings);
+  }
+
+  if (selectedId.includes(":material:")) {
+    return findImportedObjectForMaterial(selectedId, importedNodeMaterialBindings);
+  }
+
+  return null;
+}

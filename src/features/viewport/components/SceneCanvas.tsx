@@ -9,6 +9,7 @@ import {
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { getSelectionCapabilities } from "../../editor/lib/editor-bindings";
+import { resolvePreviewTargetId } from "../../editor/lib/selection-preview";
 import { useEditorStore } from "../../editor/store/editor-store";
 import {
   buildImportedSceneTree,
@@ -52,6 +53,9 @@ export function SceneCanvas() {
   const transformTool = useEditorStore((state) => state.transformTool);
   const exportRequestNonce = useEditorStore((state) => state.exportRequestNonce);
   const importedMaterialLibrary = useEditorStore((state) => state.importedMaterialLibrary);
+  const importedNodeMaterialBindings = useEditorStore(
+    (state) => state.importedNodeMaterialBindings,
+  );
   const importedMaterialTextureOverrides = useEditorStore(
     (state) => state.importedMaterialTextureOverrides,
   );
@@ -378,10 +382,15 @@ export function SceneCanvas() {
       return null;
     }
 
+    const previewTargetId = resolvePreviewTargetId(selectedId, {
+      importedNodeMaterialBindings,
+    });
     const activeObject =
-      selectedId === "imported-root"
+      previewTargetId === "imported-root"
         ? rootRef.current
-        : (objectMapRef.current.get(selectedId) ?? rootRef.current);
+        : previewTargetId
+          ? (objectMapRef.current.get(previewTargetId) ?? rootRef.current)
+          : null;
     const selectedTransformable = getSelectionCapabilities(selectedId, {
       importedTransformIds: Object.keys(importedObjectTransforms),
     }).canTransform;
@@ -476,7 +485,7 @@ export function SceneCanvas() {
             >
               <boxGeometry args={[1, 1, 1]} />
               <meshBasicMaterial
-                color={selectedId === "imported-root" ? "#fbbf24" : "#67e8f9"}
+                color={previewTargetId === "imported-root" ? "#fbbf24" : "#67e8f9"}
                 wireframe
                 toneMapped={false}
               />
