@@ -62,12 +62,12 @@ function ToolbarIconButton({
       >
         <Icon className="size-4" strokeWidth={1.8} />
         {showInlineLabel && (
-          <span className="hidden md:inline font-mono text-[12px] font-medium">
+          <span className="font-mono text-[13px] font-medium leading-none">
             {label}
           </span>
         )}
       </button>
-      <span className="pointer-events-none absolute left-1/2 top-full z-40 mt-2 -translate-x-1/2 whitespace-nowrap rounded-sm bg-[color:var(--mc-panel)] px-2.5 py-1.5 font-mono text-[11px] text-[color:var(--mc-text)] opacity-0 shadow-lg ring-1 ring-[color:var(--mc-border)] transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
+      <span className="pointer-events-none absolute left-1/2 top-full z-40 mt-2 -translate-x-1/2 whitespace-nowrap rounded-sm bg-[color:var(--mc-panel)] px-2.5 py-1.5 font-mono text-[12px] text-[color:var(--mc-text)] opacity-0 shadow-lg ring-1 ring-[color:var(--mc-border)] transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
         {label}
       </span>
     </div>
@@ -243,7 +243,7 @@ export function TopToolbar() {
         <div className="flex size-7 items-center justify-center rounded-sm bg-cyan-400/10 ring-1 ring-cyan-300/20">
           <Box className="size-4 text-cyan-300" strokeWidth={2.2} />
         </div>
-        <span className="font-mono text-base font-semibold tracking-tight text-[color:var(--mc-text)]">
+        <span className="font-mono text-lg font-semibold tracking-tight text-[color:var(--mc-text)]">
           {getCopy(locale, "brand").replace("Craft", "")}
           <span className="text-cyan-300">Craft</span>
         </span>
@@ -316,7 +316,7 @@ export function TopToolbar() {
             <button
               key={option.id}
               onClick={() => setLocale(option.id)}
-              className={`rounded-sm px-1.5 py-1 text-[11px] font-medium transition-colors ${
+              className={`rounded-sm px-2 py-1 text-[12px] font-medium transition-colors ${
                 locale === option.id
                   ? "bg-cyan-400/10 text-cyan-300"
                   : "text-[color:var(--mc-text-muted)] hover:text-[color:var(--mc-text)]"
@@ -333,7 +333,7 @@ export function TopToolbar() {
               <button
                 key={id}
                 onClick={() => setTheme(id)}
-                className={`flex items-center gap-1 rounded-sm px-1.5 py-1 text-[11px] font-medium transition-colors ${
+                className={`flex items-center gap-1 rounded-sm px-2 py-1 text-[12px] font-medium transition-colors ${
                   theme === id
                     ? "bg-cyan-400/10 text-cyan-300"
                     : "text-[color:var(--mc-text-muted)] hover:text-[color:var(--mc-text)]"
@@ -346,7 +346,7 @@ export function TopToolbar() {
           )}
         </div>
         <div
-          className={`rounded-sm px-2.5 py-1.5 font-mono text-[12px] ring-1 ${
+          className={`rounded-sm px-2.5 py-1.5 font-mono text-[13px] ring-1 ${
             importMeta.tone === "error"
               ? "bg-red-500/10 text-red-300 ring-red-400/20"
               : importMeta.tone === "success"
@@ -364,7 +364,7 @@ export function TopToolbar() {
           </span>
         </div>
         <div
-          className={`rounded-sm px-2.5 py-1.5 font-mono text-[12px] ring-1 ${
+          className={`rounded-sm px-2.5 py-1.5 font-mono text-[13px] ring-1 ${
             hasUnsavedChanges
               ? "bg-amber-500/10 text-amber-200 ring-amber-400/20"
               : "bg-emerald-500/10 text-emerald-300 ring-emerald-400/20"
@@ -388,21 +388,21 @@ export function TopToolbar() {
 
               clearImportedAsset();
             }}
-            className="max-w-[180px] truncate rounded-sm bg-[color:var(--mc-soft)] px-2.5 py-1.5 font-mono text-[12px] text-cyan-300 ring-1 ring-[color:var(--mc-border)]"
+            className="max-w-[180px] truncate rounded-sm bg-[color:var(--mc-soft)] px-2.5 py-1.5 font-mono text-[13px] text-cyan-300 ring-1 ring-[color:var(--mc-border)]"
             title={getCopy(locale, "toolbar.unloadImportedAsset")}
           >
             {importedAssetName}
           </button>
         )}
-        <div className="flex items-center gap-1.5 rounded-sm bg-[color:var(--mc-soft)] px-2.5 py-1.5 font-mono text-[12px] ring-1 ring-[color:var(--mc-border)]">
-          <Cpu className="size-3 text-cyan-300" strokeWidth={2} />
+        <div className="flex items-center gap-1.5 rounded-sm bg-[color:var(--mc-soft)] px-2.5 py-1.5 font-mono text-[13px] ring-1 ring-[color:var(--mc-border)]">
+          <Cpu className="size-3.5 text-cyan-300" strokeWidth={2} />
           <span className="text-[color:var(--mc-text-muted)]">GPU</span>
           <span className="text-[color:var(--mc-text)]">{fps}</span>
           <span className="text-[color:var(--mc-text-muted)]">fps</span>
         </div>
         <button
           onClick={requestSceneExport}
-          className="flex items-center gap-1.5 rounded-sm bg-cyan-300 px-3 py-1.5 text-xs font-semibold text-slate-950 transition-opacity hover:opacity-90"
+          className="flex items-center gap-1.5 rounded-sm bg-cyan-300 px-3 py-1.5 text-sm font-semibold text-slate-950 transition-opacity hover:opacity-90"
         >
           <Sparkles className="size-3.5" strokeWidth={2} />
           {getCopy(locale, "toolbar.exportGlb")}

@@ -179,11 +179,11 @@ export function AppShell() {
 
         <main className="relative flex min-w-0 flex-1 flex-col bg-[var(--mc-app-bg)]">
           <div className="flex h-10 shrink-0 items-center gap-3 border-b border-[color:var(--mc-border)] bg-[color:var(--mc-panel)] px-3">
-            <span className="font-mono text-[12px] text-[color:var(--mc-text-muted)]">
+            <span className="font-mono text-[13px] text-[color:var(--mc-text-muted)]">
               {getCopy(locale, "app.perspective")}
             </span>
             <div className="h-4 w-px bg-[color:var(--mc-border)]" />
-            <span className="font-mono text-[12px] text-[color:var(--mc-text-muted)]">
+            <span className="font-mono text-[13px] text-[color:var(--mc-text-muted)]">
               {getCopy(locale, "app.selection")}: {selectedName}
             </span>
             <div className="ml-3 flex items-center gap-1 rounded-sm bg-[color:var(--mc-soft)] p-0.5 ring-1 ring-[color:var(--mc-border)]">
@@ -195,7 +195,7 @@ export function AppShell() {
                   <button
                     key={tool}
                     onClick={() => setTransformTool(tool)}
-                    className={`flex items-center gap-1 rounded-sm px-2 py-1 text-[12px] transition-colors ${
+                    className={`flex items-center gap-1 rounded-sm px-2 py-1 text-[13px] transition-colors ${
                       active
                         ? "bg-cyan-400/10 text-cyan-300"
                         : "text-[color:var(--mc-text-muted)] hover:text-[color:var(--mc-text)]"
@@ -210,13 +210,13 @@ export function AppShell() {
             </div>
             <button
               onClick={requestFrameSelection}
-              className="flex items-center gap-1 rounded-sm bg-[color:var(--mc-soft)] px-2 py-1 font-mono text-[12px] text-[color:var(--mc-text-muted)] ring-1 ring-[color:var(--mc-border)] transition-colors hover:text-[color:var(--mc-text)]"
+              className="flex items-center gap-1 rounded-sm bg-[color:var(--mc-soft)] px-2 py-1 font-mono text-[13px] text-[color:var(--mc-text-muted)] ring-1 ring-[color:var(--mc-border)] transition-colors hover:text-[color:var(--mc-text)]"
               title={getCopy(locale, "app.frameSelection")}
             >
               <LocateFixed className="size-3.5" strokeWidth={1.8} />
               <span className="hidden md:inline">{getCopy(locale, "app.frameSelection")}</span>
             </button>
-            <span className="ml-auto font-mono text-[12px] uppercase text-cyan-300">
+            <span className="ml-auto font-mono text-[13px] uppercase text-cyan-300">
               {mode} / {shading} / {transformTool}
             </span>
           </div>
@@ -243,20 +243,20 @@ export function AppShell() {
                   <div className="font-mono text-sm uppercase tracking-[0.22em]">
                     {getCopy(locale, "app.importAsset")}
                   </div>
-                  <div className="text-sm text-current/90">
+                  <div className="text-[15px] text-current/90">
                     {getDragOverlayMessage(locale, dragAcceptsFile)}
                   </div>
                 </div>
               </div>
             )}
 
-            <div className="pointer-events-none absolute left-3 top-3 font-mono text-[11px] leading-relaxed text-[color:var(--mc-text-muted)]">
-              <div className="text-[13px] text-[color:var(--mc-text)]">{selectedName}</div>
+            <div className="pointer-events-none absolute left-3 top-3 font-mono text-[12px] leading-relaxed text-[color:var(--mc-text-muted)]">
+              <div className="text-[14px] text-[color:var(--mc-text)]">{selectedName}</div>
               <div>mode: {mode}</div>
               <div>{getCopy(locale, "app.dragHint")}</div>
             </div>
 
-            <div className="pointer-events-none absolute bottom-3 right-3 flex items-center gap-1 rounded-sm bg-[color:var(--mc-panel)] px-2 py-1 font-mono text-[11px] ring-1 ring-[color:var(--mc-border)]">
+            <div className="pointer-events-none absolute bottom-3 right-3 flex items-center gap-1 rounded-sm bg-[color:var(--mc-panel)] px-2 py-1 font-mono text-[12px] ring-1 ring-[color:var(--mc-border)]">
               <span className="text-[#ff5d5d]">X</span>
               <span className="text-[#5dff8f]">Y</span>
               <span className="text-[#5d9bff]">Z</span>

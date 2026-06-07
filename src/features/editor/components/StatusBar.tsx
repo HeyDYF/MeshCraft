@@ -30,7 +30,7 @@ export function StatusBar() {
   ];
 
   return (
-    <footer className="flex h-8 shrink-0 items-center gap-4 border-t border-[color:var(--mc-border)] bg-[color:var(--mc-panel)] px-3 font-mono text-[12px]">
+    <footer className="flex h-9 shrink-0 items-center gap-4 border-t border-[color:var(--mc-border)] bg-[color:var(--mc-panel)] px-3 font-mono text-[13px]">
       <div className="flex items-center gap-1.5">
         <span className="size-1.5 animate-pulse rounded-full bg-cyan-300" />
         <span className="text-[color:var(--mc-text-muted)]">{importMeta.label}</span>

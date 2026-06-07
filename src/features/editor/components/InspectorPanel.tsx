@@ -49,12 +49,12 @@ function Section({
         className="flex w-full items-center gap-2 px-3 py-2.5 text-left transition-colors hover:bg-[color:var(--mc-hover)]"
       >
         <Icon className="size-3.5 text-cyan-300" strokeWidth={1.8} />
-        <span className="font-mono text-[12px] uppercase tracking-wider text-[color:var(--mc-text)]">
+        <span className="font-mono text-[13px] uppercase tracking-wider text-[color:var(--mc-text)]">
           {getCopy(locale, `inspector.${title.toLowerCase()}`)}
         </span>
         <ChevronDown
-          className={`ml-auto size-3.5 text-[color:var(--mc-text-muted)] transition-transform ${open ? "" : "-rotate-90"}`}
-        />
+        className={`ml-auto size-3.5 text-[color:var(--mc-text-muted)] transition-transform ${open ? "" : "-rotate-90"}`}
+      />
       </button>
       {open && <div className="px-3 pb-3.5 pt-0.5">{children}</div>}
     </div>
@@ -75,7 +75,7 @@ function NumberField({
   return (
     <label className="flex items-center overflow-hidden rounded-sm bg-black/20 ring-1 ring-white/10 focus-within:ring-cyan-300/50">
       <span
-        className="flex w-5 items-center justify-center self-stretch text-[10px] font-semibold"
+        className="flex w-6 items-center justify-center self-stretch text-[11px] font-semibold"
         style={{ color: accent }}
       >
         {label}
@@ -85,7 +85,7 @@ function NumberField({
         step={0.01}
         value={Number.isFinite(value) ? value : 0}
         onChange={(event) => onChange(Number.parseFloat(event.target.value) || 0)}
-        className="w-full bg-transparent py-1.5 pr-1.5 text-right font-mono text-[13px] text-slate-100 outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
+        className="w-full bg-transparent py-1.5 pr-1.5 text-right font-mono text-[14px] text-slate-100 outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
       />
     </label>
   );
@@ -141,7 +141,7 @@ function Slider({
 
   return (
     <div className="flex items-center gap-2">
-      <span className="w-20 shrink-0 text-[12px] text-slate-500">{label}</span>
+      <span className="w-24 shrink-0 text-[13px] text-slate-500">{label}</span>
       <input
         type="range"
         min={min}
@@ -154,7 +154,7 @@ function Slider({
           background: `linear-gradient(to right, #67e8f9 ${percent}%, rgba(255,255,255,0.1) ${percent}%)`,
         }}
       />
-      <span className="w-10 shrink-0 text-right font-mono text-[12px] text-slate-100">
+      <span className="w-12 shrink-0 text-right font-mono text-[13px] text-slate-100">
         {value.toFixed(2)}
       </span>
     </div>
@@ -172,7 +172,7 @@ function Toggle({
 }) {
   return (
     <button onClick={() => onChange(!checked)} className="flex w-full items-center justify-between py-2 text-left">
-      <span className="text-[12px] text-slate-500">{label}</span>
+      <span className="text-[13px] text-slate-500">{label}</span>
       <span className={`relative h-4 w-7 rounded-full transition-colors ${checked ? "bg-cyan-300" : "bg-white/10"}`}>
         <span
           className={`absolute top-0.5 size-3 rounded-full bg-slate-950 transition-transform ${
@@ -201,7 +201,7 @@ function TransformSection({ transform }: { transform: TransformState }) {
 
   if (!canTransform) {
     return (
-      <div className="rounded-sm bg-black/20 px-3 py-3 text-[11px] text-slate-500 ring-1 ring-white/10">
+      <div className="rounded-sm bg-black/20 px-3 py-3 text-[13px] text-slate-500 ring-1 ring-white/10">
         {getCopy(locale, "inspector.transformHelp")}
       </div>
     );
@@ -210,19 +210,19 @@ function TransformSection({ transform }: { transform: TransformState }) {
   return (
     <div className="space-y-2.5">
       <div>
-        <div className="mb-1 flex items-center gap-1 text-[11px] text-slate-500">
+        <div className="mb-1 flex items-center gap-1 text-[12px] text-slate-500">
           <Move className="size-3" /> {getCopy(locale, "inspector.position")}
         </div>
         <VectorRow value={transform.position} group="position" />
       </div>
       <div>
-        <div className="mb-1 flex items-center gap-1 text-[11px] text-slate-500">
+        <div className="mb-1 flex items-center gap-1 text-[12px] text-slate-500">
           <RotateCw className="size-3" /> {getCopy(locale, "inspector.rotation")}
         </div>
         <VectorRow value={transform.rotation} group="rotation" />
       </div>
       <div>
-        <div className="mb-1 flex items-center gap-1 text-[11px] text-slate-500">
+        <div className="mb-1 flex items-center gap-1 text-[12px] text-slate-500">
           <Maximize className="size-3" /> {getCopy(locale, "inspector.scale")}
         </div>
         <VectorRow value={transform.scale} group="scale" />
@@ -244,7 +244,7 @@ function MaterialSection({ material }: { material: MaterialState | null }) {
 
   if (!material || !canEditMaterial) {
     return (
-      <div className="rounded-sm bg-black/20 px-3 py-3 text-[12px] text-slate-500 ring-1 ring-white/10">
+      <div className="rounded-sm bg-black/20 px-3 py-3 text-[13px] text-slate-500 ring-1 ring-white/10">
         {getCopy(locale, "inspector.materialHelp")}
       </div>
     );
@@ -253,7 +253,7 @@ function MaterialSection({ material }: { material: MaterialState | null }) {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <span className="w-20 shrink-0 text-[12px] text-slate-500">
+        <span className="w-24 shrink-0 text-[13px] text-slate-500">
           {getCopy(locale, "inspector.baseColor")}
         </span>
         <label className="flex flex-1 items-center gap-2 rounded-sm bg-black/20 px-2 py-1 ring-1 ring-white/10">
@@ -263,7 +263,7 @@ function MaterialSection({ material }: { material: MaterialState | null }) {
             onChange={(event) => setMaterialField("baseColor", event.target.value)}
             className="size-4 cursor-pointer rounded-sm border-0 bg-transparent p-0"
           />
-          <span className="font-mono text-[12px] uppercase text-slate-100">
+          <span className="font-mono text-[13px] uppercase text-slate-100">
             {material.baseColor}
           </span>
         </label>
@@ -298,7 +298,7 @@ function TextureSlotsSection({
 
   if (!canInspect) {
     return (
-      <div className="rounded-sm bg-black/20 px-3 py-3 text-[12px] text-slate-500 ring-1 ring-white/10">
+      <div className="rounded-sm bg-black/20 px-3 py-3 text-[13px] text-slate-500 ring-1 ring-white/10">
         {getCopy(locale, "inspector.textureHelp")}
       </div>
     );
@@ -306,7 +306,7 @@ function TextureSlotsSection({
 
   if (!slots.length) {
     return (
-      <div className="rounded-sm bg-black/20 px-3 py-3 text-[12px] text-slate-500 ring-1 ring-white/10">
+      <div className="rounded-sm bg-black/20 px-3 py-3 text-[13px] text-slate-500 ring-1 ring-white/10">
         {getCopy(locale, "inspector.noTextureMaps")}
       </div>
     );
