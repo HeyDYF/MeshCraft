@@ -1,3 +1,6 @@
+import type { Locale } from "../types";
+import { getCopy } from "./ui-copy";
+
 const SUPPORTED_IMPORT_EXTENSIONS = [".glb", ".gltf"] as const;
 
 type NamedFileLike = {
@@ -25,10 +28,12 @@ export function pickImportFile<T extends NamedFileLike>(files: Iterable<T>) {
   return null;
 }
 
-export function getDragOverlayMessage(isSupported: boolean) {
+export function getDragOverlayMessage(locale: Locale, isSupported: boolean) {
   return isSupported
-    ? "Drop GLB / glTF to import"
-    : "Only .glb and .gltf files are supported";
+    ? locale === "zh-CN"
+      ? "释放以导入 GLB / glTF"
+      : "Drop GLB / glTF to import"
+    : getCopy(locale, "importStatus.invalidAsset");
 }
 
 export function readFileAsDataUrl(file: Blob) {

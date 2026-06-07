@@ -14,6 +14,7 @@ import { useRef, useState, type ChangeEvent, type ReactNode } from "react";
 import { getSelectionCapabilities } from "../lib/editor-bindings";
 import { readFileAsDataUrl } from "../lib/import-file";
 import { isSupportedTextureFile } from "../lib/texture-overrides";
+import { getCopy } from "../lib/ui-copy";
 import { useEditorStore } from "../store/editor-store";
 import type {
   DisplayState,
@@ -36,19 +37,20 @@ function Section({
   defaultOpen?: boolean;
 }) {
   const [open, setOpen] = useState(defaultOpen);
+  const locale = useEditorStore((state) => state.locale);
 
   return (
-    <div className="border-b border-white/10">
+    <div className="border-b border-[color:var(--mc-border)]">
       <button
         onClick={() => setOpen((value) => !value)}
-        className="flex w-full items-center gap-2 px-3 py-2.5 text-left transition-colors hover:bg-white/5"
+        className="flex w-full items-center gap-2 px-3 py-2.5 text-left transition-colors hover:bg-[color:var(--mc-hover)]"
       >
         <Icon className="size-3.5 text-cyan-300" strokeWidth={1.8} />
-        <span className="font-mono text-[11px] uppercase tracking-wider text-slate-100">
-          {title}
+        <span className="font-mono text-[11px] uppercase tracking-wider text-[color:var(--mc-text)]">
+          {getCopy(locale, `inspector.${title.toLowerCase()}`)}
         </span>
         <ChevronDown
-          className={`ml-auto size-3.5 text-slate-500 transition-transform ${open ? "" : "-rotate-90"}`}
+          className={`ml-auto size-3.5 text-[color:var(--mc-text-muted)] transition-transform ${open ? "" : "-rotate-90"}`}
         />
       </button>
       {open && <div className="px-3 pb-3.5 pt-0.5">{children}</div>}
@@ -189,6 +191,7 @@ const SHADING: { id: ShadingMode; label: string }[] = [
 function TransformSection({ transform }: { transform: TransformState }) {
   const selectedId = useEditorStore((state) => state.selectedId);
   const importedObjectTransforms = useEditorStore((state) => state.importedObjectTransforms);
+  const locale = useEditorStore((state) => state.locale);
   const { canTransform } = getSelectionCapabilities(selectedId, {
     importedTransformIds: Object.keys(importedObjectTransforms),
   });
@@ -196,7 +199,7 @@ function TransformSection({ transform }: { transform: TransformState }) {
   if (!canTransform) {
     return (
       <div className="rounded-sm bg-black/20 px-3 py-3 text-[11px] text-slate-500 ring-1 ring-white/10">
-        Transform editing is available for mesh objects and imported scene roots.
+        {getCopy(locale, "inspector.transformHelp")}
       </div>
     );
   }
@@ -205,19 +208,19 @@ function TransformSection({ transform }: { transform: TransformState }) {
     <div className="space-y-2.5">
       <div>
         <div className="mb-1 flex items-center gap-1 text-[10px] text-slate-500">
-          <Move className="size-3" /> Position
+          <Move className="size-3" /> {getCopy(locale, "inspector.position")}
         </div>
         <VectorRow value={transform.position} group="position" />
       </div>
       <div>
         <div className="mb-1 flex items-center gap-1 text-[10px] text-slate-500">
-          <RotateCw className="size-3" /> Rotation
+          <RotateCw className="size-3" /> {getCopy(locale, "inspector.rotation")}
         </div>
         <VectorRow value={transform.rotation} group="rotation" />
       </div>
       <div>
         <div className="mb-1 flex items-center gap-1 text-[10px] text-slate-500">
-          <Maximize className="size-3" /> Scale
+          <Maximize className="size-3" /> {getCopy(locale, "inspector.scale")}
         </div>
         <VectorRow value={transform.scale} group="scale" />
       </div>
@@ -231,6 +234,7 @@ function MaterialSection({ material }: { material: MaterialState | null }) {
   const importedNodeMaterialBindings = useEditorStore(
     (state) => state.importedNodeMaterialBindings,
   );
+  const locale = useEditorStore((state) => state.locale);
   const { canEditMaterial } = getSelectionCapabilities(selectedId, {
     importedMaterialBindings: importedNodeMaterialBindings,
   });
@@ -238,7 +242,7 @@ function MaterialSection({ material }: { material: MaterialState | null }) {
   if (!material || !canEditMaterial) {
     return (
       <div className="rounded-sm bg-black/20 px-3 py-3 text-[11px] text-slate-500 ring-1 ring-white/10">
-        Select a procedural mesh or material slot to edit bound material values.
+        {getCopy(locale, "inspector.materialHelp")}
       </div>
     );
   }
@@ -246,7 +250,9 @@ function MaterialSection({ material }: { material: MaterialState | null }) {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <span className="w-16 shrink-0 text-[11px] text-slate-500">Base Color</span>
+        <span className="w-16 shrink-0 text-[11px] text-slate-500">
+          {getCopy(locale, "inspector.baseColor")}
+        </span>
         <label className="flex flex-1 items-center gap-2 rounded-sm bg-black/20 px-2 py-1 ring-1 ring-white/10">
           <input
             type="color"
@@ -259,10 +265,10 @@ function MaterialSection({ material }: { material: MaterialState | null }) {
           </span>
         </label>
       </div>
-      <Slider label="Metalness" value={material.metalness} onChange={(value) => setMaterialField("metalness", value)} />
-      <Slider label="Roughness" value={material.roughness} onChange={(value) => setMaterialField("roughness", value)} />
-      <Slider label="Emission" value={material.emission} onChange={(value) => setMaterialField("emission", value)} max={4} />
-      <Slider label="Opacity" value={material.opacity} onChange={(value) => setMaterialField("opacity", value)} />
+      <Slider label={getCopy(locale, "inspector.metalness")} value={material.metalness} onChange={(value) => setMaterialField("metalness", value)} />
+      <Slider label={getCopy(locale, "inspector.roughness")} value={material.roughness} onChange={(value) => setMaterialField("roughness", value)} />
+      <Slider label={getCopy(locale, "inspector.emission")} value={material.emission} onChange={(value) => setMaterialField("emission", value)} max={4} />
+      <Slider label={getCopy(locale, "inspector.opacity")} value={material.opacity} onChange={(value) => setMaterialField("opacity", value)} />
     </div>
   );
 }
@@ -285,11 +291,12 @@ function TextureSlotsSection({
     (state) => state.clearImportedTextureOverride,
   );
   const setImportStatus = useEditorStore((state) => state.setImportStatus);
+  const locale = useEditorStore((state) => state.locale);
 
   if (!canInspect) {
     return (
       <div className="rounded-sm bg-black/20 px-3 py-3 text-[11px] text-slate-500 ring-1 ring-white/10">
-        Select a bound material to inspect imported texture slots.
+        {getCopy(locale, "inspector.textureHelp")}
       </div>
     );
   }
@@ -297,7 +304,7 @@ function TextureSlotsSection({
   if (!slots.length) {
     return (
       <div className="rounded-sm bg-black/20 px-3 py-3 text-[11px] text-slate-500 ring-1 ring-white/10">
-        No texture maps are bound on the selected material.
+        {getCopy(locale, "inspector.noTextureMaps")}
       </div>
     );
   }
@@ -317,7 +324,7 @@ function TextureSlotsSection({
           }
 
           if (!isSupportedTextureFile(file.name)) {
-            setImportStatus("error", "Only .png, .jpg, .jpeg, and .webp textures are supported");
+            setImportStatus("error", getCopy(locale, "importStatus.invalidTexture"));
             event.target.value = "";
             return;
           }
@@ -350,7 +357,7 @@ function TextureSlotsSection({
               </div>
               {override && (
                 <span className="rounded-sm bg-cyan-400/10 px-1.5 py-0.5 text-[10px] font-mono text-cyan-300 ring-1 ring-cyan-300/20">
-                  Override
+                  {getCopy(locale, "inspector.override")}
                 </span>
               )}
             </div>
@@ -366,7 +373,7 @@ function TextureSlotsSection({
                 className="inline-flex items-center gap-1 rounded-sm bg-black/30 px-2 py-1 text-[10px] font-medium text-slate-200 ring-1 ring-white/10 transition-colors hover:bg-white/5"
               >
                 <Upload className="size-3" strokeWidth={1.8} />
-                Replace
+                {getCopy(locale, "inspector.replace")}
               </button>
               <button
                 onClick={() =>
@@ -376,7 +383,7 @@ function TextureSlotsSection({
                 className="inline-flex items-center gap-1 rounded-sm bg-black/20 px-2 py-1 text-[10px] font-medium text-slate-400 ring-1 ring-white/10 transition-colors enabled:hover:bg-white/5 enabled:hover:text-slate-100 disabled:opacity-40"
               >
                 <RefreshCcw className="size-3" strokeWidth={1.8} />
-                Reset
+                {getCopy(locale, "inspector.reset")}
               </button>
             </div>
           </div>
@@ -389,11 +396,12 @@ function TextureSlotsSection({
 function DisplaySection({ display }: { display: DisplayState }) {
   const setDisplayField = useEditorStore((state) => state.setDisplayField);
   const setShading = useEditorStore((state) => state.setShading);
+  const locale = useEditorStore((state) => state.locale);
 
   return (
     <div className="space-y-3">
       <div className="space-y-2">
-        <span className="text-[11px] text-slate-500">Shading</span>
+        <span className="text-[11px] text-slate-500">{getCopy(locale, "inspector.shading")}</span>
         <div className="grid grid-cols-2 gap-1.5">
           {SHADING.map((option) => {
             const active = display.shading === option.id;
@@ -408,38 +416,39 @@ function DisplaySection({ display }: { display: DisplayState }) {
                     : "bg-black/20 text-slate-500 ring-1 ring-white/10 hover:text-slate-100"
                 }`}
               >
-                {option.label}
+                {getCopy(locale, `inspector.${option.label.toLowerCase()}`)}
               </button>
             );
           })}
         </div>
       </div>
-      <Toggle label="Wireframe Overlay" checked={display.shading === "wireframe"} onChange={(checked) => setShading(checked ? "wireframe" : "shaded")} />
-      <Toggle label="Shadows" checked={display.showShadows} onChange={(value) => setDisplayField("showShadows", value)} />
-      <Toggle label="Grid" checked={display.showGrid} onChange={(value) => setDisplayField("showGrid", value)} />
-      <Toggle label="Transform Gizmo" checked={display.showGizmo} onChange={(value) => setDisplayField("showGizmo", value)} />
-      <Toggle label="Scatter Field" checked={display.showScatterField} onChange={(value) => setDisplayField("showScatterField", value)} />
-      <Toggle label="Hologram Scan" checked={display.showHologramScan} onChange={(value) => setDisplayField("showHologramScan", value)} />
-      <Toggle label="Post FX" checked={display.postFx} onChange={(value) => setDisplayField("postFx", value)} />
-      <Toggle label="LOD Preview" checked={display.lodPreview} onChange={(value) => setDisplayField("lodPreview", value)} />
-      <Toggle label="Auto Rotate" checked={display.autoRotate} onChange={(value) => setDisplayField("autoRotate", value)} />
+      <Toggle label={getCopy(locale, "inspector.wireframeOverlay")} checked={display.shading === "wireframe"} onChange={(checked) => setShading(checked ? "wireframe" : "shaded")} />
+      <Toggle label={getCopy(locale, "inspector.shadows")} checked={display.showShadows} onChange={(value) => setDisplayField("showShadows", value)} />
+      <Toggle label={getCopy(locale, "inspector.grid")} checked={display.showGrid} onChange={(value) => setDisplayField("showGrid", value)} />
+      <Toggle label={getCopy(locale, "inspector.transformGizmo")} checked={display.showGizmo} onChange={(value) => setDisplayField("showGizmo", value)} />
+      <Toggle label={getCopy(locale, "inspector.scatterField")} checked={display.showScatterField} onChange={(value) => setDisplayField("showScatterField", value)} />
+      <Toggle label={getCopy(locale, "inspector.hologramScan")} checked={display.showHologramScan} onChange={(value) => setDisplayField("showHologramScan", value)} />
+      <Toggle label={getCopy(locale, "inspector.postFx")} checked={display.postFx} onChange={(value) => setDisplayField("postFx", value)} />
+      <Toggle label={getCopy(locale, "inspector.lodPreview")} checked={display.lodPreview} onChange={(value) => setDisplayField("lodPreview", value)} />
+      <Toggle label={getCopy(locale, "inspector.autoRotate")} checked={display.autoRotate} onChange={(value) => setDisplayField("autoRotate", value)} />
     </div>
   );
 }
 
 function PerformanceSection() {
   const performance = useEditorStore((state) => state.performance);
+  const locale = useEditorStore((state) => state.locale);
 
   return (
     <div className="grid grid-cols-2 gap-2">
       {[
         { label: "FPS", value: String(performance.fps) },
-        { label: "Triangles", value: performance.triangles.toLocaleString() },
-        { label: "Instances", value: performance.instances.toLocaleString() },
-        { label: "Draw Calls", value: String(performance.drawCalls) },
-        { label: "GPU Memory", value: `${performance.gpuMemoryMb} MB` },
-        { label: "Decode", value: `${performance.decodeTimeMs.toFixed(1)} ms` },
-        { label: "Target", value: performance.fps >= 60 ? "Stable" : "Warm" },
+        { label: getCopy(locale, "inspector.triangles"), value: performance.triangles.toLocaleString() },
+        { label: getCopy(locale, "inspector.instances"), value: performance.instances.toLocaleString() },
+        { label: getCopy(locale, "inspector.drawCalls"), value: String(performance.drawCalls) },
+        { label: getCopy(locale, "inspector.gpuMemory"), value: `${performance.gpuMemoryMb} MB` },
+        { label: getCopy(locale, "inspector.decode"), value: `${performance.decodeTimeMs.toFixed(1)} ms` },
+        { label: getCopy(locale, "inspector.target"), value: performance.fps >= 60 ? getCopy(locale, "inspector.stable") : getCopy(locale, "inspector.warm") },
       ].map((item) => (
         <div key={item.label} className="rounded-sm bg-black/20 px-2 py-2 ring-1 ring-white/10">
           <div className="text-[10px] uppercase tracking-wide text-slate-600">
@@ -456,16 +465,19 @@ function SelectionSection() {
   const selectedName = useEditorStore((state) => state.selectedName);
   const selectedId = useEditorStore((state) => state.selectedId);
   const activeMaterialId = useEditorStore((state) => state.activeMaterialId);
+  const locale = useEditorStore((state) => state.locale);
 
   return (
     <div className="space-y-2 rounded-sm bg-black/20 px-3 py-3 ring-1 ring-white/10">
-      <div className="text-[10px] uppercase tracking-wide text-slate-600">Selected Node</div>
+      <div className="text-[10px] uppercase tracking-wide text-slate-600">
+        {getCopy(locale, "inspector.selectedNode")}
+      </div>
       <div className="font-mono text-[11px] text-slate-100">{selectedName}</div>
       <div className="font-mono text-[10px] text-slate-500">{selectedId}</div>
       <div className="pt-1 text-[11px] text-slate-500">
-        Material Slot:{" "}
+        {getCopy(locale, "inspector.materialSlot")}:{" "}
         <span className="font-mono text-slate-300">
-          {activeMaterialId ?? "Imported / unbound"}
+          {activeMaterialId ?? getCopy(locale, "inspector.importedUnbound")}
         </span>
       </div>
     </div>
@@ -473,6 +485,7 @@ function SelectionSection() {
 }
 
 export function InspectorPanel() {
+  const locale = useEditorStore((state) => state.locale);
   const selectedName = useEditorStore((state) => state.selectedName);
   const selectedId = useEditorStore((state) => state.selectedId);
   const transform = useEditorStore((state) => state.transform);
@@ -499,11 +512,13 @@ export function InspectorPanel() {
     : [];
 
   return (
-    <aside className="mc-thin-scroll flex w-72 shrink-0 flex-col overflow-y-auto border-l border-white/10 bg-[#12171f]">
-      <div className="flex h-9 shrink-0 items-center gap-2 border-b border-white/10 px-3">
+    <aside className="mc-thin-scroll flex w-72 shrink-0 flex-col overflow-y-auto border-l border-[color:var(--mc-border)] bg-[color:var(--mc-panel)]">
+      <div className="flex h-9 shrink-0 items-center gap-2 border-b border-[color:var(--mc-border)] px-3">
         <span className="size-1.5 rounded-full bg-cyan-300" />
-        <span className="truncate font-mono text-xs text-slate-100">{selectedName}</span>
-        <span className="ml-auto font-mono text-[10px] text-slate-500">Inspector</span>
+        <span className="truncate font-mono text-xs text-[color:var(--mc-text)]">{selectedName}</span>
+        <span className="ml-auto font-mono text-[10px] text-[color:var(--mc-text-muted)]">
+          {getCopy(locale, "inspector.inspector")}
+        </span>
       </div>
 
       <Section title="Transform" icon={Move}>

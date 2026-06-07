@@ -11,7 +11,9 @@ import { InspectorPanel } from "../features/editor/components/InspectorPanel";
 import { ScenePanel } from "../features/editor/components/ScenePanel";
 import { StatusBar } from "../features/editor/components/StatusBar";
 import { TopToolbar } from "../features/editor/components/TopToolbar";
+import { getCopy } from "../features/editor/lib/ui-copy";
 import { confirmUnsavedChangesAction } from "../features/editor/lib/unsaved-changes";
+import { persistLocale, persistTheme } from "../features/editor/lib/ui-preferences";
 import { useEditorStore } from "../features/editor/store/editor-store";
 import { SceneCanvas } from "../features/viewport/components/SceneCanvas";
 
@@ -33,6 +35,8 @@ function shouldIgnoreHistoryShortcut(target: EventTarget | null) {
 }
 
 export function AppShell() {
+  const locale = useEditorStore((state) => state.locale);
+  const theme = useEditorStore((state) => state.theme);
   const mode = useEditorStore((state) => state.mode);
   const selectedName = useEditorStore((state) => state.selectedName);
   const shading = useEditorStore((state) => state.display.shading);
@@ -63,6 +67,12 @@ export function AppShell() {
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
   }, [hasUnsavedChanges]);
+
+  useEffect(() => {
+    persistLocale(locale);
+    persistTheme(theme);
+    document.documentElement.dataset.theme = theme;
+  }, [locale, theme]);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -126,12 +136,12 @@ export function AppShell() {
     const nextFile = pickImportFile(files);
 
     if (!nextFile) {
-      setImportStatus("error", "Only .glb and .gltf files are supported");
+      setImportStatus("error", getCopy(locale, "importStatus.invalidAsset"));
       return;
     }
 
     if (!isSupportedImportFile(nextFile)) {
-      setImportStatus("error", "Only .glb and .gltf files are supported");
+      setImportStatus("error", getCopy(locale, "importStatus.invalidAsset"));
       return;
     }
 
@@ -139,13 +149,13 @@ export function AppShell() {
       const dataUrl = await readFileAsDataUrl(nextFile);
       setImportedAsset(nextFile.name, dataUrl);
     } catch {
-      setImportStatus("error", "Failed to read import file");
+      setImportStatus("error", getCopy(locale, "importStatus.readImportFailed"));
     }
   }
 
   return (
     <div
-      className="flex h-screen w-full flex-col overflow-hidden bg-[#0d1117] text-slate-100"
+      className={`theme-${theme} flex h-screen w-full flex-col overflow-hidden bg-[var(--mc-app-bg)] text-[color:var(--mc-text)]`}
       onDragOver={handleDragOver}
       onDragEnter={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -156,14 +166,16 @@ export function AppShell() {
       <div className="flex min-h-0 flex-1">
         <ScenePanel />
 
-        <main className="relative flex min-w-0 flex-1 flex-col bg-[#0d1117]">
-          <div className="flex h-9 shrink-0 items-center gap-3 border-b border-white/10 bg-[#12171f]/80 px-3">
-            <span className="font-mono text-[11px] text-slate-500">Perspective</span>
-            <div className="h-4 w-px bg-white/10" />
-            <span className="font-mono text-[11px] text-slate-500">
-              Selection: {selectedName}
+        <main className="relative flex min-w-0 flex-1 flex-col bg-[var(--mc-app-bg)]">
+          <div className="flex h-9 shrink-0 items-center gap-3 border-b border-[color:var(--mc-border)] bg-[color:var(--mc-panel)] px-3">
+            <span className="font-mono text-[11px] text-[color:var(--mc-text-muted)]">
+              {getCopy(locale, "app.perspective")}
             </span>
-            <div className="ml-3 flex items-center gap-1 rounded-sm bg-black/20 p-0.5 ring-1 ring-white/10">
+            <div className="h-4 w-px bg-[color:var(--mc-border)]" />
+            <span className="font-mono text-[11px] text-[color:var(--mc-text-muted)]">
+              {getCopy(locale, "app.selection")}: {selectedName}
+            </span>
+            <div className="ml-3 flex items-center gap-1 rounded-sm bg-[color:var(--mc-soft)] p-0.5 ring-1 ring-[color:var(--mc-border)]">
               {TRANSFORM_TOOLS.map((tool) => {
                 const Icon = TRANSFORM_TOOL_ICONS[tool];
                 const active = tool === transformTool;
@@ -175,7 +187,7 @@ export function AppShell() {
                     className={`flex items-center gap-1 rounded-sm px-2 py-1 text-[11px] transition-colors ${
                       active
                         ? "bg-cyan-400/10 text-cyan-300"
-                        : "text-slate-500 hover:text-slate-100"
+                        : "text-[color:var(--mc-text-muted)] hover:text-[color:var(--mc-text)]"
                     }`}
                     title={tool}
                   >
@@ -194,7 +206,7 @@ export function AppShell() {
             <SceneCanvas />
 
             {dragActive && (
-              <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#0d1117]/82 backdrop-blur-sm">
+              <div className="absolute inset-0 z-20 flex items-center justify-center bg-[color:var(--mc-overlay)] backdrop-blur-sm">
                 <div
                   className={`flex w-[360px] flex-col items-center gap-4 rounded-2xl border px-6 py-8 text-center shadow-2xl ${
                     dragAcceptsFile
@@ -210,22 +222,22 @@ export function AppShell() {
                     <Upload className="size-7" strokeWidth={1.8} />
                   </div>
                   <div className="font-mono text-xs uppercase tracking-[0.28em]">
-                    Import Asset
+                    {getCopy(locale, "app.importAsset")}
                   </div>
                   <div className="text-sm text-current/90">
-                    {getDragOverlayMessage(dragAcceptsFile)}
+                    {getDragOverlayMessage(locale, dragAcceptsFile)}
                   </div>
                 </div>
               </div>
             )}
 
-            <div className="pointer-events-none absolute left-3 top-3 font-mono text-[10px] leading-relaxed text-slate-500/80">
-              <div className="text-slate-100/95">{selectedName}</div>
+            <div className="pointer-events-none absolute left-3 top-3 font-mono text-[10px] leading-relaxed text-[color:var(--mc-text-muted)]">
+              <div className="text-[color:var(--mc-text)]">{selectedName}</div>
               <div>mode: {mode}</div>
-              <div>drag to orbit · scroll to zoom · right drag to pan</div>
+              <div>{getCopy(locale, "app.dragHint")}</div>
             </div>
 
-            <div className="pointer-events-none absolute bottom-3 right-3 flex items-center gap-1 rounded-sm bg-[#0f141b]/80 px-2 py-1 font-mono text-[10px] ring-1 ring-white/10">
+            <div className="pointer-events-none absolute bottom-3 right-3 flex items-center gap-1 rounded-sm bg-[color:var(--mc-panel)] px-2 py-1 font-mono text-[10px] ring-1 ring-[color:var(--mc-border)]">
               <span className="text-[#ff5d5d]">X</span>
               <span className="text-[#5dff8f]">Y</span>
               <span className="text-[#5d9bff]">Z</span>

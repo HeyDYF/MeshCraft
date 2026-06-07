@@ -23,21 +23,26 @@ import {
 import type {
   DisplayState,
   EditorMode,
+  Locale,
   MaterialState,
   MaterialTextureOverride,
   MaterialTextureSlot,
   PerformanceStats,
   SceneNode,
   ShadingMode,
+  ThemeMode,
   TransformTool,
   TransformState,
 } from "../types";
 import { SCENE_TREE } from "../types";
+import { getInitialLocale, getInitialTheme } from "../lib/ui-preferences";
 
 type Axis = keyof TransformState["position"];
 type TransformGroup = keyof TransformState;
 type EditorHistoryEntry = {
   mode: EditorMode;
+  locale: Locale;
+  theme: ThemeMode;
   selectedId: string;
   selectedName: string;
   activeMaterialId: string | null;
@@ -90,6 +95,8 @@ function revokeTextureOverrides(
 function captureHistoryEntry(state: EditorState): EditorHistoryEntry {
   return {
     mode: state.mode,
+    locale: state.locale,
+    theme: state.theme,
     selectedId: state.selectedId,
     selectedName: state.selectedName,
     activeMaterialId: state.activeMaterialId,
@@ -124,6 +131,8 @@ function pushHistoryEntry(
 
 type EditorState = {
   mode: EditorMode;
+  locale: Locale;
+  theme: ThemeMode;
   selectedId: string;
   selectedName: string;
   importedAssetName: string | null;
@@ -150,6 +159,8 @@ type EditorState = {
   historyPast: EditorHistoryEntry[];
   historyFuture: EditorHistoryEntry[];
   setMode: (mode: EditorMode) => void;
+  setLocale: (locale: Locale) => void;
+  setTheme: (theme: ThemeMode) => void;
   setSelected: (id: string, name: string) => void;
   setImportedAsset: (name: string, url: string) => void;
   setImportStatus: (status: ImportStatus, errorMessage?: string | null) => void;
@@ -186,6 +197,8 @@ type EditorState = {
 
 export const useEditorStore = create<EditorState>((set) => ({
   mode: "object",
+  locale: getInitialLocale(),
+  theme: getInitialTheme(),
   selectedId: "mesh-core",
   selectedName: "Core_Rotor",
   importedAssetName: null,
@@ -213,6 +226,8 @@ export const useEditorStore = create<EditorState>((set) => ({
   historyFuture: [],
   setMode: (mode) =>
     set((state) => pushHistoryEntry(state, { mode, hasUnsavedChanges: true })),
+  setLocale: (locale) => set({ locale }),
+  setTheme: (theme) => set({ theme }),
   setSelected: (id, name) =>
     set((state) => ({
       selectedId: id,
@@ -445,6 +460,8 @@ export const useEditorStore = create<EditorState>((set) => ({
       const applied = applyProjectSnapshot(snapshot);
 
       return {
+        locale: state.locale,
+        theme: state.theme,
         ...applied,
         hasUnsavedChanges: false,
         canUndo: false,
@@ -463,6 +480,8 @@ export const useEditorStore = create<EditorState>((set) => ({
 
       return {
         mode: "object",
+        locale: state.locale,
+        theme: state.theme,
         selectedId: "mesh-core",
         selectedName: "Core_Rotor",
         importedAssetName: null,

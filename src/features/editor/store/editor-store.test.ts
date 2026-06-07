@@ -96,6 +96,8 @@ describe("editor store unsaved changes workflow", () => {
       },
       exportRequestNonce: 0,
       hasUnsavedChanges: false,
+      locale: "en",
+      theme: "dark",
       canUndo: false,
       canRedo: false,
       historyPast: [],
@@ -248,5 +250,26 @@ describe("editor store unsaved changes workflow", () => {
     useEditorStore.getState().setDisplayField("showShadows", false);
 
     expect(useEditorStore.getState().canRedo).toBe(false);
+  });
+
+  it("updates locale and theme without marking the project dirty", () => {
+    useEditorStore.getState().setLocale("zh-CN");
+    useEditorStore.getState().setTheme("light");
+
+    expect(useEditorStore.getState().locale).toBe("zh-CN");
+    expect(useEditorStore.getState().theme).toBe("light");
+    expect(useEditorStore.getState().hasUnsavedChanges).toBe(false);
+  });
+
+  it("preserves locale and theme when resetting the project", () => {
+    useEditorStore.getState().setLocale("zh-CN");
+    useEditorStore.getState().setTheme("light");
+    useEditorStore.getState().setDisplayField("showGrid", false);
+
+    useEditorStore.getState().resetProject();
+
+    expect(useEditorStore.getState().locale).toBe("zh-CN");
+    expect(useEditorStore.getState().theme).toBe("light");
+    expect(useEditorStore.getState().hasUnsavedChanges).toBe(false);
   });
 });

@@ -32,7 +32,7 @@ describe("pickImportFile", () => {
 
 describe("getDragOverlayMessage", () => {
   it("describes supported and rejected drag states", () => {
-    expect(getDragOverlayMessage(true)).toBe("Drop GLB / glTF to import");
-    expect(getDragOverlayMessage(false)).toBe("Only .glb and .gltf files are supported");
+    expect(getDragOverlayMessage("en", true)).toBe("Drop GLB / glTF to import");
+    expect(getDragOverlayMessage("en", false)).toBe("Only .glb and .gltf files are supported");
   });
 });

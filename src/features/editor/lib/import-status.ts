@@ -1,33 +1,37 @@
+import type { Locale } from "../types";
+import { getCopy } from "./ui-copy";
+
 export type ImportStatus = "idle" | "loading" | "ready" | "error";
 
 export function describeImportStatus(
+  locale: Locale,
   status: ImportStatus,
   assetName?: string | null,
   errorMessage?: string | null,
 ) {
   if (status === "loading") {
     return {
-      label: `Loading ${assetName ?? "asset"}`,
+      label: getCopy(locale, "importStatus.loading", assetName ?? "asset"),
       tone: "loading" as const,
     };
   }
 
   if (status === "ready") {
     return {
-      label: `Loaded ${assetName ?? "asset"}`,
+      label: getCopy(locale, "importStatus.loaded", assetName ?? "asset"),
       tone: "success" as const,
     };
   }
 
   if (status === "error") {
     return {
-      label: errorMessage ?? "Import failed",
+      label: errorMessage ?? getCopy(locale, "importStatus.failed"),
       tone: "error" as const,
     };
   }
 
   return {
-    label: "Ready",
+    label: getCopy(locale, "importStatus.ready"),
     tone: "neutral" as const,
   };
 }

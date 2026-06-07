@@ -4,6 +4,10 @@ export type EditorMode = "object" | "material" | "render" | "analyze";
 
 export type TransformTool = "translate" | "rotate" | "scale";
 
+export type Locale = "en" | "zh-CN";
+
+export type ThemeMode = "dark" | "light";
+
 export type ShadingMode = "shaded" | "wireframe" | "matcap" | "normals";
 
 export type NodeKind =

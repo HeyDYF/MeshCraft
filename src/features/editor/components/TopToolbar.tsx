@@ -3,10 +3,13 @@ import {
   Aperture,
   Box,
   Cpu,
+  Languages,
+  MoonStar,
   FolderOpen,
   LoaderCircle,
   FilePlus2,
   Palette,
+  SunMedium,
   Save,
   Sparkles,
   Undo2,
@@ -16,6 +19,7 @@ import {
 import { useRef, type ChangeEvent } from "react";
 import { isSupportedImportFile, readFileAsDataUrl } from "../lib/import-file";
 import { describeImportStatus } from "../lib/import-status";
+import { getCopy } from "../lib/ui-copy";
 import {
   createProjectSnapshot,
   parseProjectSnapshot,
@@ -23,6 +27,7 @@ import {
 import { confirmUnsavedChangesAction } from "../lib/unsaved-changes";
 import { useEditorStore } from "../store/editor-store";
 import type { EditorMode } from "../types";
+import type { Locale, ThemeMode } from "../types";
 
 const MODES: { id: EditorMode; label: string; icon: typeof Box }[] = [
   { id: "object", label: "Object", icon: Box },
@@ -32,6 +37,8 @@ const MODES: { id: EditorMode; label: string; icon: typeof Box }[] = [
 ];
 
 export function TopToolbar() {
+  const locale = useEditorStore((state) => state.locale);
+  const theme = useEditorStore((state) => state.theme);
   const mode = useEditorStore((state) => state.mode);
   const fps = useEditorStore((state) => state.performance.fps);
   const importedAssetName = useEditorStore((state) => state.importedAssetName);
@@ -39,6 +46,8 @@ export function TopToolbar() {
   const importStatus = useEditorStore((state) => state.importStatus);
   const importError = useEditorStore((state) => state.importError);
   const setMode = useEditorStore((state) => state.setMode);
+  const setLocale = useEditorStore((state) => state.setLocale);
+  const setTheme = useEditorStore((state) => state.setTheme);
   const setImportedAsset = useEditorStore((state) => state.setImportedAsset);
   const clearImportedAsset = useEditorStore((state) => state.clearImportedAsset);
   const setImportStatus = useEditorStore((state) => state.setImportStatus);
@@ -74,6 +83,7 @@ export function TopToolbar() {
   const inputRef = useRef<HTMLInputElement>(null);
   const projectInputRef = useRef<HTMLInputElement>(null);
   const importMeta = describeImportStatus(
+    locale,
     importStatus,
     importedAssetName,
     importError,
@@ -141,7 +151,7 @@ export function TopToolbar() {
     }
 
     if (!isSupportedImportFile(file)) {
-      setImportStatus("error", "Only .glb and .gltf files are supported");
+      setImportStatus("error", getCopy(locale, "importStatus.invalidAsset"));
       event.target.value = "";
       return;
     }
@@ -150,7 +160,7 @@ export function TopToolbar() {
       const dataUrl = await readFileAsDataUrl(file);
       setImportedAsset(file.name, dataUrl);
     } catch {
-      setImportStatus("error", "Failed to read import file");
+      setImportStatus("error", getCopy(locale, "importStatus.readImportFailed"));
     } finally {
       event.target.value = "";
     }
@@ -169,14 +179,14 @@ export function TopToolbar() {
       clearImportedAsset();
       applyProjectSnapshot(snapshot);
     } catch {
-      setImportStatus("error", "Invalid MeshCraft project file");
+      setImportStatus("error", getCopy(locale, "importStatus.invalidProject"));
     } finally {
       event.target.value = "";
     }
   }
 
   return (
-    <header className="flex h-12 shrink-0 items-center gap-4 border-b border-white/10 bg-[#11161d]/95 px-3 backdrop-blur">
+    <header className="flex h-12 shrink-0 items-center gap-4 border-b border-[color:var(--mc-border)] bg-[color:var(--mc-toolbar)] px-3 backdrop-blur">
       <input
         ref={inputRef}
         type="file"
@@ -195,12 +205,13 @@ export function TopToolbar() {
         <div className="flex size-7 items-center justify-center rounded-sm bg-cyan-400/10 ring-1 ring-cyan-300/20">
           <Box className="size-4 text-cyan-300" strokeWidth={2.2} />
         </div>
-        <span className="font-mono text-sm font-semibold tracking-tight text-slate-100">
-          Mesh<span className="text-cyan-300">Craft</span>
+        <span className="font-mono text-sm font-semibold tracking-tight text-[color:var(--mc-text)]">
+          {getCopy(locale, "brand").replace("Craft", "")}
+          <span className="text-cyan-300">Craft</span>
         </span>
       </div>
 
-      <div className="h-5 w-px bg-white/10" />
+      <div className="h-5 w-px bg-[color:var(--mc-border)]" />
 
       <div className="flex items-center gap-0.5">
         {[
@@ -209,38 +220,38 @@ export function TopToolbar() {
         ].map(({ icon: Icon, label, onClick, disabled }) => (
           <button
             key={label}
-            title={label}
+            title={getCopy(locale, `toolbar.${label.toLowerCase()}`)}
             onClick={onClick}
             disabled={disabled}
-            className="flex size-8 items-center justify-center rounded-sm text-slate-500 transition-colors hover:bg-white/5 hover:text-slate-100 disabled:pointer-events-none disabled:opacity-35"
+            className="flex size-8 items-center justify-center rounded-sm text-[color:var(--mc-text-muted)] transition-colors hover:bg-[color:var(--mc-hover)] hover:text-[color:var(--mc-text)] disabled:pointer-events-none disabled:opacity-35"
           >
             <Icon className="size-4" strokeWidth={1.8} />
           </button>
         ))}
       </div>
 
-      <div className="h-5 w-px bg-white/10" />
+      <div className="h-5 w-px bg-[color:var(--mc-border)]" />
 
       <div className="flex items-center gap-0.5">
         {[
-          { icon: FilePlus2, label: "New", onClick: handleNewProjectClick },
-          { icon: FolderOpen, label: "Open", onClick: handleProjectOpenClick },
-          { icon: Save, label: "Save", onClick: handleProjectSaveClick },
-          { icon: Upload, label: "Import", onClick: handleImportClick },
+          { icon: FilePlus2, label: "new", onClick: handleNewProjectClick },
+          { icon: FolderOpen, label: "open", onClick: handleProjectOpenClick },
+          { icon: Save, label: "save", onClick: handleProjectSaveClick },
+          { icon: Upload, label: "import", onClick: handleImportClick },
         ].map(({ icon: Icon, label, onClick }) => (
           <button
             key={label}
-            title={label}
+            title={getCopy(locale, `toolbar.${label}`)}
             onClick={onClick}
-            className="flex size-8 items-center justify-center rounded-sm text-slate-500 transition-colors hover:bg-white/5 hover:text-slate-100"
+            className="flex size-8 items-center justify-center rounded-sm text-[color:var(--mc-text-muted)] transition-colors hover:bg-[color:var(--mc-hover)] hover:text-[color:var(--mc-text)]"
           >
             <Icon className="size-4" strokeWidth={1.8} />
           </button>
         ))}
       </div>
 
-      <div className="mx-auto flex items-center gap-1 rounded-md bg-black/20 p-0.5 ring-1 ring-white/10">
-        {MODES.map(({ id, label, icon: Icon }) => {
+      <div className="mx-auto flex items-center gap-1 rounded-md bg-[color:var(--mc-soft)] p-0.5 ring-1 ring-[color:var(--mc-border)]">
+        {MODES.map(({ id, icon: Icon }) => {
           const active = mode === id;
 
           return (
@@ -250,17 +261,55 @@ export function TopToolbar() {
               className={`flex items-center gap-1.5 rounded-sm px-3 py-1 text-xs font-medium transition-colors ${
                 active
                   ? "bg-cyan-400/10 text-cyan-300 ring-1 ring-cyan-300/25"
-                  : "text-slate-500 hover:text-slate-100"
+                  : "text-[color:var(--mc-text-muted)] hover:text-[color:var(--mc-text)]"
               }`}
             >
               <Icon className="size-3.5" strokeWidth={1.8} />
-              {label}
+              {getCopy(locale, `mode.${id}`)}
             </button>
           );
         })}
       </div>
 
       <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1 rounded-sm bg-[color:var(--mc-soft)] px-1 py-1 ring-1 ring-[color:var(--mc-border)]">
+          <Languages className="size-3.5 text-cyan-300" strokeWidth={1.8} />
+          {[
+            { id: "en" as Locale, label: "EN" },
+            { id: "zh-CN" as Locale, label: "中文" },
+          ].map((option) => (
+            <button
+              key={option.id}
+              onClick={() => setLocale(option.id)}
+              className={`rounded-sm px-1.5 py-0.5 text-[10px] font-medium transition-colors ${
+                locale === option.id
+                  ? "bg-cyan-400/10 text-cyan-300"
+                  : "text-[color:var(--mc-text-muted)] hover:text-[color:var(--mc-text)]"
+              }`}
+              title={getCopy(locale, "toolbar.language")}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-1 rounded-sm bg-[color:var(--mc-soft)] px-1 py-1 ring-1 ring-[color:var(--mc-border)]">
+          {[{ id: "dark" as ThemeMode, icon: MoonStar }, { id: "light" as ThemeMode, icon: SunMedium }].map(
+            ({ id, icon: Icon }) => (
+              <button
+                key={id}
+                onClick={() => setTheme(id)}
+                className={`flex items-center gap-1 rounded-sm px-1.5 py-0.5 text-[10px] font-medium transition-colors ${
+                  theme === id
+                    ? "bg-cyan-400/10 text-cyan-300"
+                    : "text-[color:var(--mc-text-muted)] hover:text-[color:var(--mc-text)]"
+                }`}
+                title={getCopy(locale, `toolbar.${id}`)}
+              >
+                <Icon className="size-3.5" strokeWidth={1.8} />
+              </button>
+            ),
+          )}
+        </div>
         <div
           className={`rounded-sm px-2 py-1 font-mono text-[11px] ring-1 ${
             importMeta.tone === "error"
@@ -269,7 +318,7 @@ export function TopToolbar() {
                 ? "bg-emerald-500/10 text-emerald-300 ring-emerald-400/20"
                 : importMeta.tone === "loading"
                   ? "bg-cyan-400/10 text-cyan-300 ring-cyan-300/20"
-                  : "bg-black/20 text-slate-400 ring-white/10"
+                  : "bg-[color:var(--mc-soft)] text-[color:var(--mc-text-muted)] ring-[color:var(--mc-border)]"
           }`}
         >
           <span className="inline-flex items-center gap-1.5">
@@ -286,7 +335,9 @@ export function TopToolbar() {
               : "bg-emerald-500/10 text-emerald-300 ring-emerald-400/20"
           }`}
         >
-          {hasUnsavedChanges ? "Unsaved" : "Saved"}
+          {hasUnsavedChanges
+            ? getCopy(locale, "toolbar.unsaved")
+            : getCopy(locale, "toolbar.saved")}
         </div>
         {importedAssetName && (
           <button
@@ -302,24 +353,24 @@ export function TopToolbar() {
 
               clearImportedAsset();
             }}
-            className="max-w-[180px] truncate rounded-sm bg-black/20 px-2 py-1 font-mono text-[11px] text-cyan-300 ring-1 ring-white/10"
-            title="Unload imported asset"
+            className="max-w-[180px] truncate rounded-sm bg-[color:var(--mc-soft)] px-2 py-1 font-mono text-[11px] text-cyan-300 ring-1 ring-[color:var(--mc-border)]"
+            title={getCopy(locale, "toolbar.unloadImportedAsset")}
           >
             {importedAssetName}
           </button>
         )}
-        <div className="flex items-center gap-1.5 rounded-sm bg-black/20 px-2 py-1 font-mono text-[11px] ring-1 ring-white/10">
+        <div className="flex items-center gap-1.5 rounded-sm bg-[color:var(--mc-soft)] px-2 py-1 font-mono text-[11px] ring-1 ring-[color:var(--mc-border)]">
           <Cpu className="size-3 text-cyan-300" strokeWidth={2} />
-          <span className="text-slate-500">GPU</span>
-          <span className="text-slate-100">{fps}</span>
-          <span className="text-slate-500">fps</span>
+          <span className="text-[color:var(--mc-text-muted)]">GPU</span>
+          <span className="text-[color:var(--mc-text)]">{fps}</span>
+          <span className="text-[color:var(--mc-text-muted)]">fps</span>
         </div>
         <button
           onClick={requestSceneExport}
           className="flex items-center gap-1.5 rounded-sm bg-cyan-300 px-3 py-1.5 text-xs font-semibold text-slate-950 transition-opacity hover:opacity-90"
         >
           <Sparkles className="size-3.5" strokeWidth={2} />
-          Export GLB
+          {getCopy(locale, "toolbar.exportGlb")}
         </button>
       </div>
     </header>
