@@ -38,6 +38,53 @@ const TREE: SceneNode = {
   ],
 };
 
+const IMPORTED_TREE: SceneNode = {
+  id: "imported-root",
+  name: "ImportedAsset",
+  kind: "group",
+  children: [
+    {
+      id: "imported-group:scene",
+      name: "Scene",
+      kind: "group",
+      children: [
+        {
+          id: "imported-node:0",
+          name: "HullGroup",
+          kind: "group",
+          children: [
+            { id: "imported-node:0/0", name: "HousingShell", kind: "mesh", tris: 42 },
+          ],
+        },
+      ],
+    },
+    {
+      id: "imported-group:materials",
+      name: "Materials",
+      kind: "group",
+      children: [
+        {
+          id: "imported-node:0/0:material:0",
+          name: "ShellMaterial",
+          kind: "material",
+        },
+      ],
+    },
+    {
+      id: "imported-group:textures",
+      name: "Textures",
+      kind: "group",
+      children: [
+        {
+          id: "imported-node:0/0:material:0:texture:map",
+          name: "shell_albedo",
+          kind: "texture",
+        },
+      ],
+    },
+  ],
+};
+
 describe("getScenePanelTreeForTab", () => {
   it.each<[ScenePanelTab, string[]]>([
     ["scene", ["Meshes", "Materials", "Textures"]],
@@ -47,6 +94,18 @@ describe("getScenePanelTreeForTab", () => {
     const filtered = getScenePanelTreeForTab(TREE, tab);
 
     expect(filtered.children?.map((node) => node.name)).toEqual(expectedNames);
+  });
+
+  it("keeps imported scene hierarchy in the scene tab while preserving assets and materials views", () => {
+    expect(
+      getScenePanelTreeForTab(IMPORTED_TREE, "scene").children?.map((node) => node.name),
+    ).toEqual(["Scene", "Materials", "Textures"]);
+    expect(
+      getScenePanelTreeForTab(IMPORTED_TREE, "assets").children?.map((node) => node.name),
+    ).toEqual(["Scene", "Textures"]);
+    expect(
+      getScenePanelTreeForTab(IMPORTED_TREE, "materials").children?.map((node) => node.name),
+    ).toEqual(["Materials"]);
   });
 });
 

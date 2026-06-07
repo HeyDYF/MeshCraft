@@ -7,6 +7,7 @@ import type {
 } from "../../editor/types";
 import {
   buildImportedObjectRegistry,
+  getImportedObjectId,
   getImportedMaterialId,
   getImportedTextureNodeId,
 } from "./imported-node-ids";
@@ -25,6 +26,46 @@ function pushNode(groups: Map<NodeKind, SceneNode[]>, kind: NodeKind, node: Scen
   const bucket = groups.get(kind) ?? [];
   bucket.push(node);
   groups.set(kind, bucket);
+}
+
+function createImportedHierarchyNode(
+  object: THREE.Object3D,
+  objectId: string,
+): SceneNode | null {
+  const childNodes = object.children
+    .map((child, index) => createImportedHierarchyNode(child, `${objectId}/${index}`))
+    .filter((child): child is SceneNode => child !== null);
+
+  if (object instanceof THREE.Mesh) {
+    const positionCount = object.geometry.attributes.position?.count ?? 0;
+
+    return {
+      id: objectId,
+      name: safeName(object, `Mesh_${objectId}`),
+      kind: "mesh",
+      tris: Math.floor(positionCount / 3),
+      ...(childNodes.length ? { children: childNodes } : {}),
+    };
+  }
+
+  if (object instanceof THREE.Light) {
+    return null;
+  }
+
+  if (object instanceof THREE.Camera) {
+    return null;
+  }
+
+  if (!childNodes.length) {
+    return null;
+  }
+
+  return {
+    id: objectId,
+    name: safeName(object, `Group_${objectId}`),
+    kind: "group",
+    children: childNodes,
+  };
 }
 
 function collectTexturesFromMaterial(
@@ -83,6 +124,9 @@ export function buildImportedSceneTree(
   const groups = new Map<NodeKind, SceneNode[]>();
   const textureIds = new Set<string>();
   const objectRegistry = buildImportedObjectRegistry(root);
+  const sceneNodes = root.children
+    .map((child, index) => createImportedHierarchyNode(child, getImportedObjectId([index])))
+    .filter((child): child is SceneNode => child !== null);
 
   objectRegistry.forEach((object, objectId) => {
     if (object instanceof THREE.Mesh) {
@@ -140,17 +184,16 @@ export function buildImportedSceneTree(
   });
 
   const children: SceneNode[] = [];
-  const meshNodes = groups.get("mesh");
   const materialNodes = groups.get("material");
   const textureNodes = groups.get("texture");
   const lightingNodes = [...(groups.get("light") ?? []), ...(groups.get("camera") ?? [])];
 
-  if (meshNodes?.length) {
+  if (sceneNodes.length) {
     children.push({
-      id: "imported-group:meshes",
-      name: "Meshes",
+      id: "imported-group:scene",
+      name: "Scene",
       kind: "group",
-      children: meshNodes,
+      children: sceneNodes,
     });
   }
 

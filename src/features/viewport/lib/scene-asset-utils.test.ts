@@ -20,9 +20,12 @@ function makeTexture() {
 }
 
 describe("buildImportedSceneTree", () => {
-  it("groups imported scene nodes by asset type and preserves mesh triangle counts", () => {
+  it("preserves imported object hierarchy while still exposing materials, textures, and lighting groups", () => {
     const scene = new THREE.Group();
     scene.name = "ImportedAsset";
+
+    const hullGroup = new THREE.Group();
+    hullGroup.name = "HullGroup";
 
     const meshGeometry = new THREE.BufferGeometry();
     meshGeometry.setAttribute(
@@ -48,6 +51,7 @@ describe("buildImportedSceneTree", () => {
     meshMaterial.name = "ShellMaterial";
     const mesh = new THREE.Mesh(meshGeometry, meshMaterial);
     mesh.name = "HousingShell";
+    hullGroup.add(mesh);
 
     const light = new THREE.DirectionalLight("#ffffff", 1);
     light.name = "KeyLight";
@@ -55,31 +59,36 @@ describe("buildImportedSceneTree", () => {
     const camera = new THREE.PerspectiveCamera();
     camera.name = "ReviewCamera";
 
-    scene.add(mesh, light, camera);
+    scene.add(hullGroup, light, camera);
 
     const tree = buildImportedSceneTree(scene, "ImportedAsset");
 
     expect(tree.name).toBe("ImportedAsset");
     expect(tree.children?.map((node) => node.name)).toEqual([
-      "Meshes",
+      "Scene",
       "Materials",
       "Textures",
       "Lighting",
     ]);
     expect(tree.children?.[0]?.children?.[0]).toMatchObject({
       id: getImportedObjectId([0]),
+      name: "HullGroup",
+      kind: "group",
+    });
+    expect(tree.children?.[0]?.children?.[0]?.children?.[0]).toMatchObject({
+      id: getImportedObjectId([0, 0]),
       name: "HousingShell",
       kind: "mesh",
       tris: 2,
     });
     expect(tree.children?.[1]?.children?.[0]).toMatchObject({
-      id: getImportedMaterialId(getImportedObjectId([0]), 0),
+      id: getImportedMaterialId(getImportedObjectId([0, 0]), 0),
       name: "ShellMaterial",
       kind: "material",
     });
     expect(tree.children?.[2]?.children?.[0]).toMatchObject({
       id: getImportedTextureNodeId(
-        getImportedMaterialId(getImportedObjectId([0]), 0),
+        getImportedMaterialId(getImportedObjectId([0, 0]), 0),
         "map",
       ),
       name: "shell_albedo",
