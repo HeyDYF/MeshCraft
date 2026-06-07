@@ -3,6 +3,7 @@ import {
   DEFAULT_MATERIAL_LIBRARY,
   getSelectionCapabilities,
   getMaterialBindingForSelection,
+  resolveSelectionMaterialBinding,
 } from "./editor-bindings";
 
 describe("getMaterialBindingForSelection", () => {
@@ -17,6 +18,17 @@ describe("getMaterialBindingForSelection", () => {
     expect(getMaterialBindingForSelection("mat-glow")).toBe("mat-glow");
     expect(getMaterialBindingForSelection("tex-albedo")).toBeNull();
     expect(getMaterialBindingForSelection("light-key")).toBeNull();
+  });
+});
+
+describe("resolveSelectionMaterialBinding", () => {
+  it("resolves imported texture nodes through their parent material id", () => {
+    expect(
+      resolveSelectionMaterialBinding("imported-node:0:material:0:texture:map", {
+        "imported-node:0": "imported-node:0:material:0",
+        "imported-node:0:material:0": "imported-node:0:material:0",
+      }),
+    ).toBe("imported-node:0:material:0");
   });
 });
 
@@ -58,6 +70,17 @@ describe("getSelectionCapabilities", () => {
 
     expect(
       getSelectionCapabilities("imported-material-a", {
+        importedMaterialBindings: {
+          "imported-material-a": "imported-material-a",
+        },
+      }),
+    ).toEqual({
+      canTransform: false,
+      canEditMaterial: true,
+    });
+
+    expect(
+      getSelectionCapabilities("imported-material-a:texture:map", {
         importedMaterialBindings: {
           "imported-material-a": "imported-material-a",
         },

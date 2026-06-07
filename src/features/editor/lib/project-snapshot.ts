@@ -1,4 +1,7 @@
-import { DEFAULT_MATERIAL_LIBRARY, getMaterialBindingForSelection } from "./editor-bindings";
+import {
+  DEFAULT_MATERIAL_LIBRARY,
+  resolveSelectionMaterialBinding,
+} from "./editor-bindings";
 import { DEFAULT_PROCEDURAL_TRANSFORMS, getSelectedTransform } from "./procedural-scene";
 import { DEFAULT_TRANSFORM_TOOL, coerceTransformTool } from "./transform-tool";
 import type { ImportStatus } from "./import-status";
@@ -78,8 +81,7 @@ export function applyProjectSnapshot(snapshot: ProjectSnapshot) {
     selectedId,
     selectedName,
     activeMaterialId:
-      getMaterialBindingForSelection(selectedId) ??
-      importedNodeMaterialBindings[selectedId] ??
+      resolveSelectionMaterialBinding(selectedId, importedNodeMaterialBindings) ??
       (selectedId in importedMaterialLibrary ? selectedId : null),
     materialLibrary: snapshot.materialLibrary ?? DEFAULT_MATERIAL_LIBRARY,
     objectTransforms: snapshot.objectTransforms ?? DEFAULT_PROCEDURAL_TRANSFORMS,

@@ -2,6 +2,7 @@ import { create } from "zustand";
 import {
   DEFAULT_MATERIAL_LIBRARY,
   getMaterialBindingForSelection,
+  resolveSelectionMaterialBinding,
 } from "../lib/editor-bindings";
 import type { ImportStatus } from "../lib/import-status";
 import { DEFAULT_TRANSFORM_TOOL } from "../lib/transform-tool";
@@ -232,8 +233,10 @@ export const useEditorStore = create<EditorState>((set) => ({
     set((state) => ({
       selectedId: id,
       selectedName: name,
-      activeMaterialId:
-        getMaterialBindingForSelection(id) ?? state.importedNodeMaterialBindings[id] ?? null,
+      activeMaterialId: resolveSelectionMaterialBinding(
+        id,
+        state.importedNodeMaterialBindings,
+      ),
       transform: resolveSelectionTransform(
         id,
         state.objectTransforms,

@@ -272,4 +272,19 @@ describe("editor store unsaved changes workflow", () => {
     expect(useEditorStore.getState().theme).toBe("light");
     expect(useEditorStore.getState().hasUnsavedChanges).toBe(false);
   });
+
+  it("activates the owning imported material when a texture node is selected", () => {
+    useEditorStore.setState({
+      importedNodeMaterialBindings: {
+        "imported-node:0": "imported-node:0:material:0",
+        "imported-node:0:material:0": "imported-node:0:material:0",
+      },
+    });
+
+    useEditorStore
+      .getState()
+      .setSelected("imported-node:0:material:0:texture:map", "paint_albedo");
+
+    expect(useEditorStore.getState().activeMaterialId).toBe("imported-node:0:material:0");
+  });
 });

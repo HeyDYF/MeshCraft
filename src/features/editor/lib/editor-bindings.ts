@@ -43,6 +43,28 @@ export function getMaterialBindingForSelection(selectedId: string) {
   return MATERIAL_BINDINGS[selectedId] ?? null;
 }
 
+export function resolveSelectionMaterialBinding(
+  selectedId: string,
+  importedMaterialBindings: Record<string, string> = {},
+) {
+  const directBinding =
+    getMaterialBindingForSelection(selectedId) ?? importedMaterialBindings[selectedId] ?? null;
+
+  if (directBinding) {
+    return directBinding;
+  }
+
+  const textureMarker = ":texture:";
+  const textureMarkerIndex = selectedId.lastIndexOf(textureMarker);
+
+  if (textureMarkerIndex !== -1) {
+    const materialId = selectedId.slice(0, textureMarkerIndex);
+    return importedMaterialBindings[materialId] ?? materialId;
+  }
+
+  return null;
+}
+
 export function getSelectionCapabilities(
   selectedId: string,
   options: SelectionCapabilityOptions = {},
@@ -54,8 +76,7 @@ export function getSelectionCapabilities(
     selectedId === "imported-root" ||
     importedTransformIds.has(selectedId);
   const canEditMaterial =
-    getMaterialBindingForSelection(selectedId) !== null ||
-    selectedId in importedMaterialBindings;
+    resolveSelectionMaterialBinding(selectedId, importedMaterialBindings) !== null;
 
   return {
     canTransform,
