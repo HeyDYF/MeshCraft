@@ -323,6 +323,39 @@ describe("editor store unsaved changes workflow", () => {
     expect(useEditorStore.getState().hasUnsavedChanges).toBe(false);
   });
 
+  it("keeps imported texture selection stable while switching active material slots", () => {
+    useEditorStore.setState({
+      selectedId: "imported-node:0:material:0:texture:map",
+      selectedIds: ["imported-node:0:material:0:texture:map"],
+      selectedName: "paint_albedo",
+      activeMaterialId: "imported-node:0:material:0",
+      importedMaterialLibrary: {
+        "imported-node:0:material:0": {
+          baseColor: "#123456",
+          metalness: 0.2,
+          roughness: 0.7,
+          emission: 0,
+          opacity: 1,
+        },
+        "imported-node:0:material:1": {
+          baseColor: "#abcdef",
+          metalness: 0.5,
+          roughness: 0.4,
+          emission: 0,
+          opacity: 1,
+        },
+      },
+      hasUnsavedChanges: false,
+    });
+
+    useEditorStore.getState().setActiveMaterialId("imported-node:0:material:1");
+
+    expect(useEditorStore.getState().selectedId).toBe("imported-node:0:material:0:texture:map");
+    expect(useEditorStore.getState().selectedName).toBe("paint_albedo");
+    expect(useEditorStore.getState().activeMaterialId).toBe("imported-node:0:material:1");
+    expect(useEditorStore.getState().hasUnsavedChanges).toBe(false);
+  });
+
   it("requests viewport capture without dirtying the project", () => {
     useEditorStore.getState().requestViewportCapture();
 
