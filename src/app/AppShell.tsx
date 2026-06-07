@@ -1,4 +1,4 @@
-import { Move3D, RotateCw, Scaling, Upload } from "lucide-react";
+import { LocateFixed, Move3D, RotateCw, Scaling, Upload } from "lucide-react";
 import { useEffect, useState, type DragEvent } from "react";
 import {
   getDragOverlayMessage,
@@ -49,6 +49,7 @@ export function AppShell() {
   const canRedo = useEditorStore((state) => state.canRedo);
   const undo = useEditorStore((state) => state.undo);
   const redo = useEditorStore((state) => state.redo);
+  const requestFrameSelection = useEditorStore((state) => state.requestFrameSelection);
   const [dragActive, setDragActive] = useState(false);
   const [dragAcceptsFile, setDragAcceptsFile] = useState(true);
 
@@ -76,11 +77,21 @@ export function AppShell() {
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
-      if (shouldIgnoreHistoryShortcut(event.target) || !(event.metaKey || event.ctrlKey)) {
+      const key = event.key.toLowerCase();
+
+      if (shouldIgnoreHistoryShortcut(event.target)) {
         return;
       }
 
-      const key = event.key.toLowerCase();
+      if (key === "f") {
+        event.preventDefault();
+        requestFrameSelection();
+        return;
+      }
+
+      if (!(event.metaKey || event.ctrlKey)) {
+        return;
+      }
 
       if (key === "z" && event.shiftKey && canRedo) {
         event.preventDefault();
@@ -104,7 +115,7 @@ export function AppShell() {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [canRedo, canUndo, redo, undo]);
+  }, [canRedo, canUndo, redo, requestFrameSelection, undo]);
 
   function handleDragOver(event: DragEvent<HTMLDivElement>) {
     event.preventDefault();
@@ -197,6 +208,14 @@ export function AppShell() {
                 );
               })}
             </div>
+            <button
+              onClick={requestFrameSelection}
+              className="flex items-center gap-1 rounded-sm bg-[color:var(--mc-soft)] px-2 py-1 font-mono text-[12px] text-[color:var(--mc-text-muted)] ring-1 ring-[color:var(--mc-border)] transition-colors hover:text-[color:var(--mc-text)]"
+              title={getCopy(locale, "app.frameSelection")}
+            >
+              <LocateFixed className="size-3.5" strokeWidth={1.8} />
+              <span className="hidden md:inline">{getCopy(locale, "app.frameSelection")}</span>
+            </button>
             <span className="ml-auto font-mono text-[12px] uppercase text-cyan-300">
               {mode} / {shading} / {transformTool}
             </span>

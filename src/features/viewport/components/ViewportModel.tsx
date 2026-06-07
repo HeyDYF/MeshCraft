@@ -149,6 +149,7 @@ export function ViewportModel({ exportRootRef }: { exportRootRef?: RefObject<Gro
       <group ref={group}>
         <mesh
           ref={housingRef}
+          userData={{ selectionId: "mesh-housing" }}
           castShadow
           receiveShadow
           position={[
@@ -199,6 +200,7 @@ export function ViewportModel({ exportRootRef }: { exportRootRef?: RefObject<Gro
 
         <group
           ref={ventsRef}
+          userData={{ selectionId: "mesh-vents" }}
           position={transformToTriplet(objectTransforms["mesh-vents"], "position")}
           rotation={transformToTriplet(objectTransforms["mesh-vents"], "rotation")}
           scale={transformToTriplet(objectTransforms["mesh-vents"], "scale")}
@@ -224,6 +226,7 @@ export function ViewportModel({ exportRootRef }: { exportRootRef?: RefObject<Gro
 
         <group
           ref={rotor}
+          userData={{ selectionId: "mesh-core" }}
           position={transformToTriplet(objectTransforms["mesh-core"], "position")}
           rotation={transformToTriplet(objectTransforms["mesh-core"], "rotation")}
           scale={transformToTriplet(objectTransforms["mesh-core"], "scale")}
@@ -269,6 +272,7 @@ export function ViewportModel({ exportRootRef }: { exportRootRef?: RefObject<Gro
 
         <group
           ref={boltsRef}
+          userData={{ selectionId: "mesh-bolts" }}
           position={transformToTriplet(objectTransforms["mesh-bolts"], "position")}
           rotation={transformToTriplet(objectTransforms["mesh-bolts"], "rotation")}
           scale={transformToTriplet(objectTransforms["mesh-bolts"], "scale")}

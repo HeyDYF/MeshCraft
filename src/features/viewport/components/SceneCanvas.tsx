@@ -8,6 +8,7 @@ import {
 } from "@react-three/drei";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
+import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import { resolvePreviewTargetIds } from "../../editor/lib/selection-preview";
 import { useEditorStore } from "../../editor/store/editor-store";
 import {
@@ -27,6 +28,7 @@ import {
 } from "../lib/gltf-loader";
 import { buildImportedTransformRegistry } from "../lib/imported-transform-registry";
 import { SCATTER_FIELD_INSTANCE_COUNT } from "../lib/instanced-field";
+import { computeFrameSelectionPose } from "../lib/frame-selection";
 import { exportSceneToGlb } from "../lib/scene-export";
 import { captureCanvasToPng } from "../lib/viewport-capture";
 import { InstancedScatterField } from "./InstancedScatterField";
@@ -55,6 +57,9 @@ export function SceneCanvas() {
   const viewportCaptureRequestNonce = useEditorStore(
     (state) => state.viewportCaptureRequestNonce,
   );
+  const frameSelectionRequestNonce = useEditorStore(
+    (state) => state.frameSelectionRequestNonce,
+  );
   const importedMaterialLibrary = useEditorStore((state) => state.importedMaterialLibrary);
   const importedNodeMaterialBindings = useEditorStore(
     (state) => state.importedNodeMaterialBindings,
@@ -70,7 +75,83 @@ export function SceneCanvas() {
   const setTransform = useEditorStore((state) => state.setTransform);
   const proceduralExportRootRef = useRef<THREE.Group>(null);
   const importedExportRootRef = useRef<THREE.Group>(null);
+  const importedObjectMapRef = useRef(new Map<string, THREE.Object3D>());
+  const orbitControlsRef = useRef<OrbitControlsImpl | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  function FrameSelectionBridge() {
+    const { camera } = useThree();
+
+    useEffect(() => {
+      if (!frameSelectionRequestNonce || !orbitControlsRef.current) {
+        return;
+      }
+
+      const previewTargetIds = resolvePreviewTargetIds(selectedId, {
+        importedNodeMaterialBindings,
+      });
+
+      const previewObjectCandidates: Array<THREE.Object3D | null> = importedAssetUrl
+        ? previewTargetIds
+            .map((targetId) =>
+              targetId === "imported-root"
+                ? importedExportRootRef.current
+                : importedObjectMapRef.current.get(targetId) ?? null,
+            )
+        : previewTargetIds
+            .map((targetId) => {
+              if (!proceduralExportRootRef.current) {
+                return null;
+              }
+
+              let match: THREE.Object3D | null = null;
+              proceduralExportRootRef.current.traverse((object) => {
+                if (object.userData.selectionId === targetId) {
+                  match = object;
+                }
+              });
+
+              return match;
+            });
+      const previewObjects = previewObjectCandidates.filter(
+        (object): object is THREE.Object3D => object instanceof THREE.Object3D,
+      );
+
+      if (!previewObjects.length) {
+        return;
+      }
+
+      const bounds = previewObjects.reduce((box, object) => box.union(new THREE.Box3().setFromObject(object)), new THREE.Box3());
+
+      if (bounds.isEmpty()) {
+        return;
+      }
+
+      if (!(camera instanceof THREE.PerspectiveCamera)) {
+        return;
+      }
+
+      const nextPose = computeFrameSelectionPose({
+        bounds,
+        cameraPosition: camera.position.clone(),
+        controlsTarget: orbitControlsRef.current.target.clone(),
+        fovDegrees: camera.fov,
+      });
+
+      camera.position.copy(nextPose.position);
+      orbitControlsRef.current.target.copy(nextPose.target);
+      camera.updateProjectionMatrix();
+      orbitControlsRef.current.update();
+    }, [
+      camera,
+      frameSelectionRequestNonce,
+      importedAssetUrl,
+      importedNodeMaterialBindings,
+      selectedId,
+    ]);
+
+    return null;
+  }
 
   function PerformanceBridge() {
     const updatePerformance = useEditorStore((state) => state.updatePerformance);
@@ -120,7 +201,6 @@ export function SceneCanvas() {
     const importedAssetName = useEditorStore((state) => state.importedAssetName);
     const importedObjectTransforms = useEditorStore((state) => state.importedObjectTransforms);
     const rootRef = importedExportRootRef;
-    const objectMapRef = useRef(new Map<string, THREE.Object3D>());
     const originalTextureSlotsRef = useRef(
       new Map<string, Record<string, THREE.Texture | null>>(),
     );
@@ -139,13 +219,13 @@ export function SceneCanvas() {
           }
 
           nextScene = gltf.scene.clone(true);
-          objectMapRef.current = buildImportedObjectRegistry(nextScene);
+          importedObjectMapRef.current = buildImportedObjectRegistry(nextScene);
           originalTextureSlotsRef.current.clear();
           nextScene.traverse((object) => {
             object.castShadow = true;
             object.receiveShadow = true;
           });
-          objectMapRef.current.forEach((object, objectId) => {
+          importedObjectMapRef.current.forEach((object, objectId) => {
             if (!(object instanceof THREE.Mesh)) {
               return;
             }
@@ -172,7 +252,7 @@ export function SceneCanvas() {
               rotation: { x: 0, y: 0, z: 0 },
               scale: { x: 1, y: 1, z: 1 },
             },
-            objectMapRef.current,
+            importedObjectMapRef.current,
           );
           const extractedBindings = extractImportedMaterialBindings(nextScene);
           const persistedState = useEditorStore.getState();
@@ -228,7 +308,7 @@ export function SceneCanvas() {
         dracoLoader.dispose();
         overrideTextureCacheRef.current.forEach((texture) => texture.dispose());
         overrideTextureCacheRef.current.clear();
-        objectMapRef.current.clear();
+        importedObjectMapRef.current.clear();
         originalTextureSlotsRef.current.clear();
         if (nextScene) {
           disposeSceneResources(nextScene);
@@ -250,7 +330,7 @@ export function SceneCanvas() {
       }
 
       scene.traverse((object) => {
-        const objectId = findImportedObjectId(objectMapRef.current, object);
+        const objectId = findImportedObjectId(importedObjectMapRef.current, object);
         if (!(object instanceof THREE.Mesh) || !objectId) {
           return;
         }
@@ -309,7 +389,7 @@ export function SceneCanvas() {
 
           const objectId = materialId.slice(0, materialMarkerIndex);
           const materialIndex = materialId.slice(materialMarkerIndex + materialMarker.length);
-          const object = objectMapRef.current.get(objectId);
+          const object = importedObjectMapRef.current.get(objectId);
 
           if (!(object instanceof THREE.Mesh)) {
             continue;
@@ -392,12 +472,12 @@ export function SceneCanvas() {
     const activeObject =
       selectedId === "imported-root"
         ? rootRef.current
-        : objectMapRef.current.get(selectedId) ?? null;
+        : importedObjectMapRef.current.get(selectedId) ?? null;
     const previewObjects = previewTargetIds
       .map((targetId) =>
         targetId === "imported-root"
           ? rootRef.current
-          : (objectMapRef.current.get(targetId) ?? null),
+          : (importedObjectMapRef.current.get(targetId) ?? null),
       )
       .filter((object): object is THREE.Object3D => object !== null);
     const previewHighlights = previewObjects
@@ -458,7 +538,7 @@ export function SceneCanvas() {
             onClick={(event: ThreeEvent<MouseEvent>) => {
               event.stopPropagation();
               const object = event.object;
-              const objectId = findImportedObjectId(objectMapRef.current, object);
+              const objectId = findImportedObjectId(importedObjectMapRef.current, object);
 
               if (object && objectId) {
                 setSelected(objectId, object.name || "ImportedNode");
@@ -588,6 +668,7 @@ export function SceneCanvas() {
       <Suspense fallback={null}>
         <ResetGlInfo />
         <PerformanceBridge />
+        <FrameSelectionBridge />
         <SceneLights />
         <Environment preset="city" />
         <group position={[0, 0.4, 0]}>
@@ -629,6 +710,7 @@ export function SceneCanvas() {
       </Suspense>
 
       <OrbitControls
+        ref={orbitControlsRef}
         makeDefault
         enableDamping
         dampingFactor={0.08}

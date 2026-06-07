@@ -31,6 +31,7 @@ const UI_COPY: Record<Locale, CopyTree> = {
     app: {
       perspective: "Perspective",
       selection: "Selection",
+      frameSelection: "Frame",
       importAsset: "Import Asset",
       dragHint: "drag to orbit · scroll to zoom · right drag to pan",
     },
@@ -166,6 +167,7 @@ const UI_COPY: Record<Locale, CopyTree> = {
     app: {
       perspective: "透视视图",
       selection: "当前选择",
+      frameSelection: "聚焦",
       importAsset: "导入资产",
       dragHint: "拖拽旋转 · 滚轮缩放 · 右键拖拽平移",
     },

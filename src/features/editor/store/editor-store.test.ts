@@ -96,6 +96,7 @@ describe("editor store unsaved changes workflow", () => {
       },
       exportRequestNonce: 0,
       viewportCaptureRequestNonce: 0,
+      frameSelectionRequestNonce: 0,
       hasUnsavedChanges: false,
       locale: "en",
       theme: "dark",
@@ -293,6 +294,13 @@ describe("editor store unsaved changes workflow", () => {
     useEditorStore.getState().requestViewportCapture();
 
     expect(useEditorStore.getState().viewportCaptureRequestNonce).toBe(1);
+    expect(useEditorStore.getState().hasUnsavedChanges).toBe(false);
+  });
+
+  it("requests frame selection without dirtying the project", () => {
+    useEditorStore.getState().requestFrameSelection();
+
+    expect(useEditorStore.getState().frameSelectionRequestNonce).toBe(1);
     expect(useEditorStore.getState().hasUnsavedChanges).toBe(false);
   });
 });
