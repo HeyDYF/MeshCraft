@@ -22,6 +22,29 @@ function safeName(object: THREE.Object3D, fallback: string) {
   return object.name.trim() || fallback;
 }
 
+function formatImportedMaterialNodeName(
+  object: THREE.Object3D,
+  objectId: string,
+  material: THREE.Material,
+  materialIndex: number,
+) {
+  const objectName = safeName(object, `Mesh_${objectId}`);
+  const materialName = material.name.trim() || "Material";
+  return `${objectName} · Slot ${materialIndex + 1} · ${materialName}`;
+}
+
+function formatImportedTextureNodeName(
+  object: THREE.Object3D,
+  objectId: string,
+  texture: THREE.Texture,
+  channel: string,
+  materialIndex: number,
+) {
+  const objectName = safeName(object, `Mesh_${objectId}`);
+  const textureName = texture.name.trim() || `Texture_${channel}`;
+  return `${objectName} · Slot ${materialIndex + 1} · ${channel} · ${textureName}`;
+}
+
 function pushNode(groups: Map<NodeKind, SceneNode[]>, kind: NodeKind, node: SceneNode) {
   const bucket = groups.get(kind) ?? [];
   bucket.push(node);
@@ -162,7 +185,7 @@ export function buildImportedSceneTree(
         const materialId = getImportedMaterialId(objectId, index);
         pushNode(groups, "material", {
           id: materialId,
-          name: material.name.trim() || `${safeName(object, "Mesh")}_Material_${index + 1}`,
+          name: formatImportedMaterialNodeName(object, objectId, material, index),
           kind: "material",
         });
 
@@ -176,7 +199,13 @@ export function buildImportedSceneTree(
             textureIds.add(textureId);
             pushNode(groups, "texture", {
               id: textureId,
-              name: value.name.trim() || `${safeName(object, "Mesh")}_Texture_${textureIds.size}`,
+              name: formatImportedTextureNodeName(
+                object,
+                objectId,
+                value,
+                channel,
+                index,
+              ),
               kind: "texture",
             });
           }

@@ -83,7 +83,7 @@ describe("buildImportedSceneTree", () => {
     });
     expect(tree.children?.[1]?.children?.[0]).toMatchObject({
       id: getImportedMaterialId(getImportedObjectId([0, 0]), 0),
-      name: "ShellMaterial",
+      name: "HousingShell · Slot 1 · ShellMaterial",
       kind: "material",
     });
     expect(tree.children?.[2]?.children?.[0]).toMatchObject({
@@ -91,7 +91,7 @@ describe("buildImportedSceneTree", () => {
         getImportedMaterialId(getImportedObjectId([0, 0]), 0),
         "map",
       ),
-      name: "shell_albedo",
+      name: "HousingShell · Slot 1 · map · shell_albedo",
       kind: "texture",
     });
     expect(tree.children?.[3]?.children?.map((node) => node.name)).toEqual([
