@@ -169,6 +169,7 @@ type EditorState = {
   setTheme: (theme: ThemeMode) => void;
   setSelected: (id: string, name: string) => void;
   toggleSelected: (id: string, name: string) => void;
+  setActiveMaterialId: (materialId: string | null) => void;
   setImportedAsset: (name: string, url: string) => void;
   setImportStatus: (status: ImportStatus, errorMessage?: string | null) => void;
   clearImportedAsset: () => void;
@@ -256,6 +257,7 @@ export const useEditorStore = create<EditorState>((set) => ({
         state.transform,
       ),
     })),
+  setActiveMaterialId: (materialId) => set({ activeMaterialId: materialId }),
   toggleSelected: (id, _name) =>
     set((state) => {
       if (state.selectedIds.includes(id)) {

@@ -27,6 +27,7 @@ import {
   loadGltfWithLoader,
 } from "../lib/gltf-loader";
 import { buildImportedTransformRegistry } from "../lib/imported-transform-registry";
+import { resolveImportedMaterialSelection } from "../lib/imported-material-selection";
 import { SCATTER_FIELD_INSTANCE_COUNT } from "../lib/instanced-field";
 import { computeFrameSelectionPose } from "../lib/frame-selection";
 import { exportSceneToGlb } from "../lib/scene-export";
@@ -72,6 +73,7 @@ export function SceneCanvas() {
   const setImportedMaterialBindings = useEditorStore((state) => state.setImportedMaterialBindings);
   const setImportedObjectTransforms = useEditorStore((state) => state.setImportedObjectTransforms);
   const setSelected = useEditorStore((state) => state.setSelected);
+  const setActiveMaterialId = useEditorStore((state) => state.setActiveMaterialId);
   const setTransform = useEditorStore((state) => state.setTransform);
   const proceduralExportRootRef = useRef<THREE.Group>(null);
   const importedExportRootRef = useRef<THREE.Group>(null);
@@ -541,7 +543,18 @@ export function SceneCanvas() {
               const objectId = findImportedObjectId(importedObjectMapRef.current, object);
 
               if (object && objectId) {
+                const materialIndex =
+                  typeof event.face?.materialIndex === "number"
+                    ? event.face.materialIndex
+                    : 0;
                 setSelected(objectId, object.name || "ImportedNode");
+                setActiveMaterialId(
+                  resolveImportedMaterialSelection(
+                    objectId,
+                    materialIndex,
+                    importedMaterialLibrary,
+                  ),
+                );
                 setTransform({
                   position: {
                     x: object.position.x,

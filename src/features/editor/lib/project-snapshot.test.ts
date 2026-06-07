@@ -15,6 +15,7 @@ describe("createProjectSnapshot", () => {
       mode: "material",
       selectedId: "imported-node:0",
       selectedName: "ImportedHull",
+      activeMaterialId: "imported-node:0:material:0",
       transformTool: "rotate",
       materialLibrary: DEFAULT_MATERIAL_LIBRARY,
       objectTransforms: DEFAULT_PROCEDURAL_TRANSFORMS,
@@ -97,6 +98,7 @@ describe("createProjectSnapshot", () => {
 
     expect(snapshot.version).toBe(PROJECT_SNAPSHOT_VERSION);
     expect(snapshot.selectedId).toBe("imported-node:0");
+    expect(snapshot.activeMaterialId).toBe("imported-node:0:material:0");
     expect(snapshot.transformTool).toBe("rotate");
     expect(snapshot.importedAssetName).toBe("robot.glb");
     expect(snapshot.importedAssetUrl).toContain("data:model/gltf-binary");
@@ -113,6 +115,7 @@ describe("parseProjectSnapshot", () => {
           mode: "object",
           selectedId: "mesh-core",
           selectedName: "Core_Rotor",
+          activeMaterialId: "mat-carbon",
           transformTool: "translate",
           materialLibrary: DEFAULT_MATERIAL_LIBRARY,
           objectTransforms: DEFAULT_PROCEDURAL_TRANSFORMS,
@@ -162,6 +165,7 @@ describe("applyProjectSnapshot", () => {
       mode: "object",
       selectedId: "imported-node:0",
       selectedName: "ImportedHull",
+      activeMaterialId: "imported-node:0:material:0",
       transformTool: "translate",
       materialLibrary: DEFAULT_MATERIAL_LIBRARY,
       objectTransforms: DEFAULT_PROCEDURAL_TRANSFORMS,
@@ -242,5 +246,76 @@ describe("applyProjectSnapshot", () => {
       "albedo_override.png",
     );
     expect(applied.sceneTree.id).toBe("imported-root");
+  });
+
+  it("preserves an explicit imported active material slot when the selected node has multiple materials", () => {
+    const snapshot = createProjectSnapshot({
+      mode: "material",
+      selectedId: "imported-node:0",
+      selectedName: "ImportedHull",
+      activeMaterialId: "imported-node:0:material:1",
+      transformTool: "translate",
+      materialLibrary: DEFAULT_MATERIAL_LIBRARY,
+      objectTransforms: DEFAULT_PROCEDURAL_TRANSFORMS,
+      display: {
+        shading: "shaded",
+        showGrid: true,
+        showGizmo: true,
+        showScatterField: true,
+        showHologramScan: true,
+        showShadows: true,
+        postFx: true,
+        autoRotate: true,
+        lodPreview: false,
+      },
+      importedAssetName: "robot.glb",
+      importedAssetUrl: "data:model/gltf-binary;base64,AAAA",
+      importedMaterialLibrary: {
+        "imported-node:0:material:0": {
+          baseColor: "#123456",
+          metalness: 0.2,
+          roughness: 0.7,
+          emission: 0,
+          opacity: 1,
+        },
+        "imported-node:0:material:1": {
+          baseColor: "#abcdef",
+          metalness: 0.5,
+          roughness: 0.4,
+          emission: 0,
+          opacity: 1,
+        },
+      },
+      importedNodeMaterialBindings: {
+        "imported-node:0": "imported-node:0:material:0",
+        "imported-node:0:material:0": "imported-node:0:material:0",
+        "imported-node:0:material:1": "imported-node:0:material:1",
+      },
+      importedMaterialTextureSlots: {},
+      importedMaterialTextureOverrides: {},
+      importedObjectTransforms: {
+        "imported-root": {
+          position: { x: 0, y: -1.15, z: 0 },
+          rotation: { x: 0, y: 0, z: 0 },
+          scale: { x: 1, y: 1, z: 1 },
+        },
+        "imported-node:0": {
+          position: { x: 1, y: 2, z: 3 },
+          rotation: { x: 0.1, y: 0.2, z: 0.3 },
+          scale: { x: 2, y: 2, z: 2 },
+        },
+      },
+      sceneTree: {
+        id: "imported-root",
+        name: "robot",
+        kind: "group",
+        children: [],
+      },
+    });
+
+    const applied = applyProjectSnapshot(snapshot);
+
+    expect(applied.selectedId).toBe("imported-node:0");
+    expect(applied.activeMaterialId).toBe("imported-node:0:material:1");
   });
 });

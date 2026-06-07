@@ -23,6 +23,7 @@ export type ProjectSnapshot = {
   mode: EditorMode;
   selectedId: string;
   selectedName: string;
+  activeMaterialId?: string | null;
   transformTool: "translate" | "rotate" | "scale";
   materialLibrary: Record<string, MaterialState>;
   objectTransforms: Record<string, TransformState>;
@@ -81,6 +82,11 @@ export function applyProjectSnapshot(snapshot: ProjectSnapshot) {
     selectedId,
     selectedName,
     activeMaterialId:
+      snapshot.activeMaterialId &&
+      (snapshot.activeMaterialId in (snapshot.materialLibrary ?? DEFAULT_MATERIAL_LIBRARY) ||
+        snapshot.activeMaterialId in importedMaterialLibrary)
+        ? snapshot.activeMaterialId
+        :
       resolveSelectionMaterialBinding(selectedId, importedNodeMaterialBindings) ??
       (selectedId in importedMaterialLibrary ? selectedId : null),
     materialLibrary: snapshot.materialLibrary ?? DEFAULT_MATERIAL_LIBRARY,

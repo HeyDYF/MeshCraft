@@ -96,6 +96,7 @@ export function TopToolbar() {
   const selectedId = useEditorStore((state) => state.selectedId);
   const selectedName = useEditorStore((state) => state.selectedName);
   const transformTool = useEditorStore((state) => state.transformTool);
+  const activeMaterialId = useEditorStore((state) => state.activeMaterialId);
   const materialLibrary = useEditorStore((state) => state.materialLibrary);
   const objectTransforms = useEditorStore((state) => state.objectTransforms);
   const importedMaterialLibrary = useEditorStore((state) => state.importedMaterialLibrary);
@@ -156,6 +157,7 @@ export function TopToolbar() {
       mode,
       selectedId,
       selectedName,
+      activeMaterialId,
       transformTool,
       materialLibrary,
       objectTransforms,
