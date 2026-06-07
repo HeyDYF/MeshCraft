@@ -36,6 +36,25 @@ import { SCENE_TREE } from "../types";
 
 type Axis = keyof TransformState["position"];
 type TransformGroup = keyof TransformState;
+type EditorHistoryEntry = {
+  mode: EditorMode;
+  selectedId: string;
+  selectedName: string;
+  activeMaterialId: string | null;
+  materialLibrary: Record<string, MaterialState>;
+  importedMaterialLibrary: Record<string, MaterialState>;
+  importedNodeMaterialBindings: Record<string, string>;
+  importedMaterialTextureSlots: Record<string, MaterialTextureSlot[]>;
+  objectTransforms: Record<string, TransformState>;
+  importedObjectTransforms: Record<string, TransformState>;
+  sceneTree: SceneNode;
+  transformTool: TransformTool;
+  transform: TransformState;
+  display: DisplayState;
+  hasUnsavedChanges: boolean;
+};
+
+const HISTORY_LIMIT = 64;
 
 const DEFAULT_DISPLAY: DisplayState = {
   shading: "shaded",
@@ -68,6 +87,41 @@ function revokeTextureOverrides(
   });
 }
 
+function captureHistoryEntry(state: EditorState): EditorHistoryEntry {
+  return {
+    mode: state.mode,
+    selectedId: state.selectedId,
+    selectedName: state.selectedName,
+    activeMaterialId: state.activeMaterialId,
+    materialLibrary: state.materialLibrary,
+    importedMaterialLibrary: state.importedMaterialLibrary,
+    importedNodeMaterialBindings: state.importedNodeMaterialBindings,
+    importedMaterialTextureSlots: state.importedMaterialTextureSlots,
+    objectTransforms: state.objectTransforms,
+    importedObjectTransforms: state.importedObjectTransforms,
+    sceneTree: state.sceneTree,
+    transformTool: state.transformTool,
+    transform: state.transform,
+    display: state.display,
+    hasUnsavedChanges: state.hasUnsavedChanges,
+  };
+}
+
+function pushHistoryEntry(
+  state: EditorState,
+  nextState: Partial<EditorState>,
+): Partial<EditorState> {
+  const historyPast = [...state.historyPast, captureHistoryEntry(state)].slice(-HISTORY_LIMIT);
+
+  return {
+    ...nextState,
+    historyPast,
+    historyFuture: [],
+    canUndo: historyPast.length > 0,
+    canRedo: false,
+  };
+}
+
 type EditorState = {
   mode: EditorMode;
   selectedId: string;
@@ -91,6 +145,10 @@ type EditorState = {
   performance: PerformanceStats;
   exportRequestNonce: number;
   hasUnsavedChanges: boolean;
+  canUndo: boolean;
+  canRedo: boolean;
+  historyPast: EditorHistoryEntry[];
+  historyFuture: EditorHistoryEntry[];
   setMode: (mode: EditorMode) => void;
   setSelected: (id: string, name: string) => void;
   setImportedAsset: (name: string, url: string) => void;
@@ -121,6 +179,8 @@ type EditorState = {
   applyProjectSnapshot: (snapshot: ProjectSnapshot) => void;
   markProjectSaved: () => void;
   resetProject: () => void;
+  undo: () => void;
+  redo: () => void;
   requestSceneExport: () => void;
 };
 
@@ -147,7 +207,12 @@ export const useEditorStore = create<EditorState>((set) => ({
   performance: DEFAULT_PERFORMANCE,
   exportRequestNonce: 0,
   hasUnsavedChanges: false,
-  setMode: (mode) => set({ mode, hasUnsavedChanges: true }),
+  canUndo: false,
+  canRedo: false,
+  historyPast: [],
+  historyFuture: [],
+  setMode: (mode) =>
+    set((state) => pushHistoryEntry(state, { mode, hasUnsavedChanges: true })),
   setSelected: (id, name) =>
     set((state) => ({
       selectedId: id,
@@ -276,7 +341,8 @@ export const useEditorStore = create<EditorState>((set) => ({
   setSceneTree: (sceneTree) => set({ sceneTree }),
   setImportedObjectTransforms: (importedObjectTransforms) =>
     set({ importedObjectTransforms }),
-  setTransformTool: (transformTool) => set({ transformTool, hasUnsavedChanges: true }),
+  setTransformTool: (transformTool) =>
+    set((state) => pushHistoryEntry(state, { transformTool, hasUnsavedChanges: true })),
   setTransform: (transform) =>
     set((state) => {
       const updated = updateSelectionTransformMaps(
@@ -286,12 +352,12 @@ export const useEditorStore = create<EditorState>((set) => ({
         state.importedObjectTransforms,
       );
 
-      return {
+      return pushHistoryEntry(state, {
         transform,
         objectTransforms: updated.proceduralTransforms,
         importedObjectTransforms: updated.importedTransforms,
         hasUnsavedChanges: true,
-      };
+      });
     }),
   setTransformAxis: (group, axis, value) =>
     set((state) => {
@@ -309,53 +375,59 @@ export const useEditorStore = create<EditorState>((set) => ({
         state.importedObjectTransforms,
       );
 
-      return {
+      return pushHistoryEntry(state, {
         transform: nextTransform,
         objectTransforms: updated.proceduralTransforms,
         importedObjectTransforms: updated.importedTransforms,
         hasUnsavedChanges: true,
-      };
+      });
     }),
   setMaterialField: (key, value) =>
-    set((state) => ({
-      materialLibrary:
-        state.activeMaterialId && state.activeMaterialId in state.materialLibrary
-          ? {
-              ...state.materialLibrary,
-              [state.activeMaterialId]: {
-                ...state.materialLibrary[state.activeMaterialId],
-                [key]: value,
-              },
-            }
-          : state.materialLibrary,
-      importedMaterialLibrary:
-        state.activeMaterialId && state.activeMaterialId in state.importedMaterialLibrary
-          ? {
-              ...state.importedMaterialLibrary,
-              [state.activeMaterialId]: {
-                ...state.importedMaterialLibrary[state.activeMaterialId],
-                [key]: value,
-              },
-            }
-          : state.importedMaterialLibrary,
-      hasUnsavedChanges: true,
-    })),
+    set((state) =>
+      pushHistoryEntry(state, {
+        materialLibrary:
+          state.activeMaterialId && state.activeMaterialId in state.materialLibrary
+            ? {
+                ...state.materialLibrary,
+                [state.activeMaterialId]: {
+                  ...state.materialLibrary[state.activeMaterialId],
+                  [key]: value,
+                },
+              }
+            : state.materialLibrary,
+        importedMaterialLibrary:
+          state.activeMaterialId && state.activeMaterialId in state.importedMaterialLibrary
+            ? {
+                ...state.importedMaterialLibrary,
+                [state.activeMaterialId]: {
+                  ...state.importedMaterialLibrary[state.activeMaterialId],
+                  [key]: value,
+                },
+              }
+            : state.importedMaterialLibrary,
+        hasUnsavedChanges: true,
+      }),
+    ),
   setDisplayField: (key, value) =>
-    set((state) => ({
-      display: {
-        ...state.display,
-        [key]: value,
-      },
-      hasUnsavedChanges: true,
-    })),
+    set((state) =>
+      pushHistoryEntry(state, {
+        display: {
+          ...state.display,
+          [key]: value,
+        },
+        hasUnsavedChanges: true,
+      }),
+    ),
   setShading: (shading) =>
-    set((state) => ({
-      display: {
-        ...state.display,
-        shading,
-      },
-      hasUnsavedChanges: true,
-    })),
+    set((state) =>
+      pushHistoryEntry(state, {
+        display: {
+          ...state.display,
+          shading,
+        },
+        hasUnsavedChanges: true,
+      }),
+    ),
   updatePerformance: (performance) =>
     set((state) => ({
       performance: {
@@ -375,6 +447,10 @@ export const useEditorStore = create<EditorState>((set) => ({
       return {
         ...applied,
         hasUnsavedChanges: false,
+        canUndo: false,
+        canRedo: false,
+        historyPast: [],
+        historyFuture: [],
       };
     }),
   markProjectSaved: () => set({ hasUnsavedChanges: false }),
@@ -407,6 +483,47 @@ export const useEditorStore = create<EditorState>((set) => ({
         display: DEFAULT_DISPLAY,
         performance: DEFAULT_PERFORMANCE,
         hasUnsavedChanges: false,
+        canUndo: false,
+        canRedo: false,
+        historyPast: [],
+        historyFuture: [],
+      };
+    }),
+  undo: () =>
+    set((state) => {
+      const previous = state.historyPast.at(-1);
+
+      if (!previous) {
+        return {};
+      }
+
+      const historyPast = state.historyPast.slice(0, -1);
+      const historyFuture = [captureHistoryEntry(state), ...state.historyFuture];
+
+      return {
+        ...previous,
+        historyPast,
+        historyFuture,
+        canUndo: historyPast.length > 0,
+        canRedo: historyFuture.length > 0,
+      };
+    }),
+  redo: () =>
+    set((state) => {
+      const [next, ...historyFuture] = state.historyFuture;
+
+      if (!next) {
+        return {};
+      }
+
+      const historyPast = [...state.historyPast, captureHistoryEntry(state)].slice(-HISTORY_LIMIT);
+
+      return {
+        ...next,
+        historyPast,
+        historyFuture,
+        canUndo: historyPast.length > 0,
+        canRedo: historyFuture.length > 0,
       };
     }),
   requestSceneExport: () =>

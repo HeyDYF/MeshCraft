@@ -9,7 +9,9 @@ import {
   Palette,
   Save,
   Sparkles,
+  Undo2,
   Upload,
+  Redo2,
 } from "lucide-react";
 import { useRef, type ChangeEvent } from "react";
 import { isSupportedImportFile, readFileAsDataUrl } from "../lib/import-file";
@@ -65,6 +67,10 @@ export function TopToolbar() {
   const sceneTree = useEditorStore((state) => state.sceneTree);
   const display = useEditorStore((state) => state.display);
   const hasUnsavedChanges = useEditorStore((state) => state.hasUnsavedChanges);
+  const canUndo = useEditorStore((state) => state.canUndo);
+  const canRedo = useEditorStore((state) => state.canRedo);
+  const undo = useEditorStore((state) => state.undo);
+  const redo = useEditorStore((state) => state.redo);
   const inputRef = useRef<HTMLInputElement>(null);
   const projectInputRef = useRef<HTMLInputElement>(null);
   const importMeta = describeImportStatus(
@@ -192,6 +198,25 @@ export function TopToolbar() {
         <span className="font-mono text-sm font-semibold tracking-tight text-slate-100">
           Mesh<span className="text-cyan-300">Craft</span>
         </span>
+      </div>
+
+      <div className="h-5 w-px bg-white/10" />
+
+      <div className="flex items-center gap-0.5">
+        {[
+          { icon: Undo2, label: "Undo", onClick: undo, disabled: !canUndo },
+          { icon: Redo2, label: "Redo", onClick: redo, disabled: !canRedo },
+        ].map(({ icon: Icon, label, onClick, disabled }) => (
+          <button
+            key={label}
+            title={label}
+            onClick={onClick}
+            disabled={disabled}
+            className="flex size-8 items-center justify-center rounded-sm text-slate-500 transition-colors hover:bg-white/5 hover:text-slate-100 disabled:pointer-events-none disabled:opacity-35"
+          >
+            <Icon className="size-4" strokeWidth={1.8} />
+          </button>
+        ))}
       </div>
 
       <div className="h-5 w-px bg-white/10" />

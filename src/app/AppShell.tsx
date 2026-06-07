@@ -21,6 +21,17 @@ const TRANSFORM_TOOL_ICONS = {
   scale: Scaling,
 } as const;
 
+function shouldIgnoreHistoryShortcut(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) {
+    return false;
+  }
+
+  return (
+    target.isContentEditable ||
+    ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)
+  );
+}
+
 export function AppShell() {
   const mode = useEditorStore((state) => state.mode);
   const selectedName = useEditorStore((state) => state.selectedName);
@@ -30,6 +41,10 @@ export function AppShell() {
   const setImportedAsset = useEditorStore((state) => state.setImportedAsset);
   const setImportStatus = useEditorStore((state) => state.setImportStatus);
   const setTransformTool = useEditorStore((state) => state.setTransformTool);
+  const canUndo = useEditorStore((state) => state.canUndo);
+  const canRedo = useEditorStore((state) => state.canRedo);
+  const undo = useEditorStore((state) => state.undo);
+  const redo = useEditorStore((state) => state.redo);
   const [dragActive, setDragActive] = useState(false);
   const [dragAcceptsFile, setDragAcceptsFile] = useState(true);
 
@@ -48,6 +63,38 @@ export function AppShell() {
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
   }, [hasUnsavedChanges]);
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (shouldIgnoreHistoryShortcut(event.target) || !(event.metaKey || event.ctrlKey)) {
+        return;
+      }
+
+      const key = event.key.toLowerCase();
+
+      if (key === "z" && event.shiftKey && canRedo) {
+        event.preventDefault();
+        redo();
+        return;
+      }
+
+      if (key === "y" && canRedo) {
+        event.preventDefault();
+        redo();
+        return;
+      }
+
+      if (key === "z" && canUndo) {
+        event.preventDefault();
+        undo();
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [canRedo, canUndo, redo, undo]);
 
   function handleDragOver(event: DragEvent<HTMLDivElement>) {
     event.preventDefault();

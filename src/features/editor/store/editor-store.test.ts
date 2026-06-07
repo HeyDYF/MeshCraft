@@ -96,6 +96,10 @@ describe("editor store unsaved changes workflow", () => {
       },
       exportRequestNonce: 0,
       hasUnsavedChanges: false,
+      canUndo: false,
+      canRedo: false,
+      historyPast: [],
+      historyFuture: [],
     });
   });
 
@@ -206,5 +210,43 @@ describe("editor store unsaved changes workflow", () => {
     });
 
     expect(useEditorStore.getState().hasUnsavedChanges).toBe(false);
+  });
+
+  it("undoes and redoes editor mutations", () => {
+    useEditorStore.getState().setDisplayField("showGrid", false);
+
+    expect(useEditorStore.getState().display.showGrid).toBe(false);
+    expect(useEditorStore.getState().canUndo).toBe(true);
+
+    useEditorStore.getState().undo();
+
+    expect(useEditorStore.getState().display.showGrid).toBe(true);
+    expect(useEditorStore.getState().canRedo).toBe(true);
+
+    useEditorStore.getState().redo();
+
+    expect(useEditorStore.getState().display.showGrid).toBe(false);
+  });
+
+  it("restores transform edits through undo", () => {
+    useEditorStore.getState().setTransformAxis("position", "x", 3.25);
+
+    expect(useEditorStore.getState().objectTransforms["mesh-core"].position.x).toBe(3.25);
+
+    useEditorStore.getState().undo();
+
+    expect(useEditorStore.getState().objectTransforms["mesh-core"].position.x).toBe(0);
+    expect(useEditorStore.getState().transform.position.x).toBe(0);
+  });
+
+  it("clears redo history after a new mutation", () => {
+    useEditorStore.getState().setDisplayField("showGrid", false);
+    useEditorStore.getState().undo();
+
+    expect(useEditorStore.getState().canRedo).toBe(true);
+
+    useEditorStore.getState().setDisplayField("showShadows", false);
+
+    expect(useEditorStore.getState().canRedo).toBe(false);
   });
 });
