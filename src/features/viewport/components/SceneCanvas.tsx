@@ -28,6 +28,7 @@ import {
 import { buildImportedTransformRegistry } from "../lib/imported-transform-registry";
 import { SCATTER_FIELD_INSTANCE_COUNT } from "../lib/instanced-field";
 import { exportSceneToGlb } from "../lib/scene-export";
+import { captureCanvasToPng } from "../lib/viewport-capture";
 import { InstancedScatterField } from "./InstancedScatterField";
 import { SceneLights } from "./SceneLights";
 import { ViewportModel } from "./ViewportModel";
@@ -51,6 +52,9 @@ export function SceneCanvas() {
   const selectedId = useEditorStore((state) => state.selectedId);
   const transformTool = useEditorStore((state) => state.transformTool);
   const exportRequestNonce = useEditorStore((state) => state.exportRequestNonce);
+  const viewportCaptureRequestNonce = useEditorStore(
+    (state) => state.viewportCaptureRequestNonce,
+  );
   const importedMaterialLibrary = useEditorStore((state) => state.importedMaterialLibrary);
   const importedNodeMaterialBindings = useEditorStore(
     (state) => state.importedNodeMaterialBindings,
@@ -66,6 +70,7 @@ export function SceneCanvas() {
   const setTransform = useEditorStore((state) => state.setTransform);
   const proceduralExportRootRef = useRef<THREE.Group>(null);
   const importedExportRootRef = useRef<THREE.Group>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   function PerformanceBridge() {
     const updatePerformance = useEditorStore((state) => state.updatePerformance);
@@ -550,6 +555,14 @@ export function SceneCanvas() {
     void exportSceneToGlb(activeRoot.clone(true), importedAssetName);
   }, [exportRequestNonce, importedAssetName, importedAssetUrl]);
 
+  useEffect(() => {
+    if (!viewportCaptureRequestNonce || !canvasRef.current) {
+      return;
+    }
+
+    void captureCanvasToPng(canvasRef.current, importedAssetName);
+  }, [viewportCaptureRequestNonce, importedAssetName]);
+
   return (
     <Canvas
       className="h-full w-full"
@@ -563,6 +576,7 @@ export function SceneCanvas() {
         toneMapping: THREE.ACESFilmicToneMapping,
       }}
       onCreated={({ gl, scene }) => {
+        canvasRef.current = gl.domElement;
         gl.outputColorSpace = THREE.SRGBColorSpace;
         gl.shadowMap.enabled = display.showShadows;
         gl.shadowMap.type = THREE.PCFSoftShadowMap;

@@ -1,4 +1,5 @@
 import {
+  Camera,
   ChevronDown,
   Cpu,
   Eye,
@@ -437,6 +438,53 @@ function DisplaySection({ display }: { display: DisplayState }) {
   );
 }
 
+function RenderSection() {
+  const locale = useEditorStore((state) => state.locale);
+  const importedAssetName = useEditorStore((state) => state.importedAssetName);
+  const display = useEditorStore((state) => state.display);
+  const requestViewportCapture = useEditorStore((state) => state.requestViewportCapture);
+
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-2">
+        {[
+          {
+            label: getCopy(locale, "inspector.captureFormat"),
+            value: "PNG",
+          },
+          {
+            label: getCopy(locale, "inspector.captureSource"),
+            value: importedAssetName ?? getCopy(locale, "inspector.proceduralScene"),
+          },
+          {
+            label: getCopy(locale, "inspector.captureFx"),
+            value: display.postFx ? getCopy(locale, "inspector.enabled") : getCopy(locale, "inspector.disabled"),
+          },
+          {
+            label: getCopy(locale, "inspector.captureShadows"),
+            value: display.showShadows ? getCopy(locale, "inspector.enabled") : getCopy(locale, "inspector.disabled"),
+          },
+        ].map((item) => (
+          <div key={item.label} className="rounded-sm bg-black/20 px-2 py-2 ring-1 ring-white/10">
+            <div className="text-[11px] uppercase tracking-wide text-slate-600">
+              {item.label}
+            </div>
+            <div className="mt-1 font-mono text-[12px] text-slate-100">{item.value}</div>
+          </div>
+        ))}
+      </div>
+
+      <button
+        onClick={requestViewportCapture}
+        className="flex w-full items-center justify-center gap-2 rounded-sm bg-cyan-300 px-3 py-2 text-sm font-semibold text-slate-950 transition-opacity hover:opacity-90"
+      >
+        <Camera className="size-4" strokeWidth={2} />
+        {getCopy(locale, "inspector.captureViewport")}
+      </button>
+    </div>
+  );
+}
+
 function PerformanceSection() {
   const performance = useEditorStore((state) => state.performance);
   const locale = useEditorStore((state) => state.locale);
@@ -589,6 +637,12 @@ export function InspectorPanel() {
       {mode === "analyze" && (
         <Section title="Analyze" icon={Cpu} defaultOpen>
           <AnalyzeSceneSection />
+        </Section>
+      )}
+
+      {mode === "render" && (
+        <Section title="Render" icon={Camera} defaultOpen>
+          <RenderSection />
         </Section>
       )}
 

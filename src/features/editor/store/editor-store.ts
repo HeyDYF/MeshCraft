@@ -154,6 +154,7 @@ type EditorState = {
   display: DisplayState;
   performance: PerformanceStats;
   exportRequestNonce: number;
+  viewportCaptureRequestNonce: number;
   hasUnsavedChanges: boolean;
   canUndo: boolean;
   canRedo: boolean;
@@ -194,6 +195,7 @@ type EditorState = {
   undo: () => void;
   redo: () => void;
   requestSceneExport: () => void;
+  requestViewportCapture: () => void;
 };
 
 export const useEditorStore = create<EditorState>((set) => ({
@@ -220,6 +222,7 @@ export const useEditorStore = create<EditorState>((set) => ({
   display: DEFAULT_DISPLAY,
   performance: DEFAULT_PERFORMANCE,
   exportRequestNonce: 0,
+  viewportCaptureRequestNonce: 0,
   hasUnsavedChanges: false,
   canUndo: false,
   canRedo: false,
@@ -551,5 +554,9 @@ export const useEditorStore = create<EditorState>((set) => ({
   requestSceneExport: () =>
     set((state) => ({
       exportRequestNonce: state.exportRequestNonce + 1,
+    })),
+  requestViewportCapture: () =>
+    set((state) => ({
+      viewportCaptureRequestNonce: state.viewportCaptureRequestNonce + 1,
     })),
 }));

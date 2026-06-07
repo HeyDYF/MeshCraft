@@ -95,6 +95,7 @@ describe("editor store unsaved changes workflow", () => {
         instances: 1000,
       },
       exportRequestNonce: 0,
+      viewportCaptureRequestNonce: 0,
       hasUnsavedChanges: false,
       locale: "en",
       theme: "dark",
@@ -286,5 +287,12 @@ describe("editor store unsaved changes workflow", () => {
       .setSelected("imported-node:0:material:0:texture:map", "paint_albedo");
 
     expect(useEditorStore.getState().activeMaterialId).toBe("imported-node:0:material:0");
+  });
+
+  it("requests viewport capture without dirtying the project", () => {
+    useEditorStore.getState().requestViewportCapture();
+
+    expect(useEditorStore.getState().viewportCaptureRequestNonce).toBe(1);
+    expect(useEditorStore.getState().hasUnsavedChanges).toBe(false);
   });
 });
