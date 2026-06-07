@@ -1,33 +1,33 @@
-const PROCEDURAL_MATERIAL_PREVIEW_TARGETS: Record<string, string> = {
-  "mat-steel": "mesh-housing",
-  "mat-carbon": "mesh-core",
-  "mat-glow": "mesh-housing",
+const PROCEDURAL_MATERIAL_PREVIEW_TARGETS: Record<string, string[]> = {
+  "mat-steel": ["mesh-housing", "mesh-vents", "mesh-bolts"],
+  "mat-carbon": ["mesh-core"],
+  "mat-glow": ["mesh-housing"],
 };
 
 type ResolvePreviewTargetOptions = {
   importedNodeMaterialBindings?: Record<string, string>;
 };
 
-function findImportedObjectForMaterial(
+function findImportedObjectsForMaterial(
   materialId: string,
   importedNodeMaterialBindings: Record<string, string>,
 ) {
-  return (
-    Object.entries(importedNodeMaterialBindings).find(
+  return Object.entries(importedNodeMaterialBindings)
+    .filter(
       ([nodeId, bindingId]) =>
         nodeId.startsWith("imported-node:") &&
         !nodeId.includes(":material:") &&
         bindingId === materialId,
-    )?.[0] ?? null
-  );
+    )
+    .map(([nodeId]) => nodeId);
 }
 
-export function resolvePreviewTargetId(
+export function resolvePreviewTargetIds(
   selectedId: string,
   options: ResolvePreviewTargetOptions = {},
 ) {
   if (selectedId === "imported-root" || selectedId.startsWith("mesh-")) {
-    return selectedId;
+    return [selectedId];
   }
 
   if (selectedId in PROCEDURAL_MATERIAL_PREVIEW_TARGETS) {
@@ -38,12 +38,12 @@ export function resolvePreviewTargetId(
 
   if (selectedId.includes(":texture:")) {
     const materialId = selectedId.slice(0, selectedId.lastIndexOf(":texture:"));
-    return findImportedObjectForMaterial(materialId, importedNodeMaterialBindings);
+    return findImportedObjectsForMaterial(materialId, importedNodeMaterialBindings);
   }
 
   if (selectedId.includes(":material:")) {
-    return findImportedObjectForMaterial(selectedId, importedNodeMaterialBindings);
+    return findImportedObjectsForMaterial(selectedId, importedNodeMaterialBindings);
   }
 
-  return null;
+  return [];
 }

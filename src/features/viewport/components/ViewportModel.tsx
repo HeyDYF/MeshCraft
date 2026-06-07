@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import type { Group, Mesh } from "three";
 import { DoubleSide, Vector3 } from "three";
 import { getSelectionCapabilities } from "../../editor/lib/editor-bindings";
-import { resolvePreviewTargetId } from "../../editor/lib/selection-preview";
+import { resolvePreviewTargetIds } from "../../editor/lib/selection-preview";
 import { useEditorStore } from "../../editor/store/editor-store";
 import type { TransformState } from "../../editor/types";
 import { HologramShell } from "./HologramShell";
@@ -92,18 +92,31 @@ export function ViewportModel({ exportRootRef }: { exportRootRef?: RefObject<Gro
     () => (useNormalsTint ? "#7fb5ff" : rotorMaterial.baseColor),
     [rotorMaterial.baseColor, useNormalsTint],
   );
-  const previewTargetId = resolvePreviewTargetId(selectedId);
+  const previewTargetIds = resolvePreviewTargetIds(selectedId);
   const selectedTransformable = getSelectionCapabilities(selectedId).canTransform;
   const selectedObject =
-    previewTargetId === "mesh-housing"
+    selectedId === "mesh-housing"
       ? housingRef.current
-      : previewTargetId === "mesh-core"
+      : selectedId === "mesh-core"
         ? rotor.current
-        : previewTargetId === "mesh-vents"
+        : selectedId === "mesh-vents"
           ? ventsRef.current
-          : previewTargetId === "mesh-bolts"
+          : selectedId === "mesh-bolts"
             ? boltsRef.current
             : null;
+  const previewObjects = previewTargetIds
+    .map((targetId) =>
+      targetId === "mesh-housing"
+        ? housingRef.current
+        : targetId === "mesh-core"
+          ? rotor.current
+          : targetId === "mesh-vents"
+            ? ventsRef.current
+            : targetId === "mesh-bolts"
+              ? boltsRef.current
+              : null,
+    )
+    .filter((object): object is NonNullable<typeof selectedObject> => object !== null);
   const detail = DETAIL_CONFIG[lodLevel];
 
   useEffect(() => {
@@ -341,12 +354,11 @@ export function ViewportModel({ exportRootRef }: { exportRootRef?: RefObject<Gro
           </group>
         )}
 
-        {selectedTransformable && selectedObject && (
+        {previewObjects.map((object, index) => (
           <mesh
-            position={selectedObject.position}
-            rotation={
-              "rotation" in selectedObject ? selectedObject.rotation : [0, 0, 0]
-            }
+            key={`preview-${previewTargetIds[index]}`}
+            position={object.position}
+            rotation={"rotation" in object ? object.rotation : [0, 0, 0]}
           >
             <torusGeometry args={[1.9, 0.012, 8, 120]} />
             <meshBasicMaterial
@@ -354,7 +366,7 @@ export function ViewportModel({ exportRootRef }: { exportRootRef?: RefObject<Gro
               toneMapped={false}
             />
           </mesh>
-        )}
+        ))}
       </group>
 
       {mode === "object" && display.showGizmo && selectedTransformable && selectedObject && (

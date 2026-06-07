@@ -8,8 +8,7 @@ import {
 } from "@react-three/drei";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
-import { getSelectionCapabilities } from "../../editor/lib/editor-bindings";
-import { resolvePreviewTargetId } from "../../editor/lib/selection-preview";
+import { resolvePreviewTargetIds } from "../../editor/lib/selection-preview";
 import { useEditorStore } from "../../editor/store/editor-store";
 import {
   buildImportedSceneTree,
@@ -382,27 +381,35 @@ export function SceneCanvas() {
       return null;
     }
 
-    const previewTargetId = resolvePreviewTargetId(selectedId, {
+    const previewTargetIds = resolvePreviewTargetIds(selectedId, {
       importedNodeMaterialBindings,
     });
     const activeObject =
-      previewTargetId === "imported-root"
+      selectedId === "imported-root"
         ? rootRef.current
-        : previewTargetId
-          ? (objectMapRef.current.get(previewTargetId) ?? rootRef.current)
-          : null;
-    const selectedTransformable = getSelectionCapabilities(selectedId, {
-      importedTransformIds: Object.keys(importedObjectTransforms),
-    }).canTransform;
-    const importedHighlightBox = useMemo(() => new THREE.Box3(), []);
-    const importedHighlightSize = useMemo(() => new THREE.Vector3(), []);
-    const importedHighlightCenter = useMemo(() => new THREE.Vector3(), []);
+        : objectMapRef.current.get(selectedId) ?? null;
+    const previewObjects = previewTargetIds
+      .map((targetId) =>
+        targetId === "imported-root"
+          ? rootRef.current
+          : (objectMapRef.current.get(targetId) ?? null),
+      )
+      .filter((object): object is THREE.Object3D => object !== null);
+    const previewHighlights = previewObjects
+      .map((object) => {
+        const box = new THREE.Box3().setFromObject(object);
+        const size = new THREE.Vector3();
+        const center = new THREE.Vector3();
+        box.getSize(size);
+        box.getCenter(center);
 
-    if (activeObject && selectedTransformable) {
-      importedHighlightBox.setFromObject(activeObject);
-      importedHighlightBox.getSize(importedHighlightSize);
-      importedHighlightBox.getCenter(importedHighlightCenter);
-    }
+        return {
+          object,
+          size,
+          center,
+        };
+      })
+      .filter(({ size }) => size.lengthSq() > 0);
 
     return (
       <>
@@ -471,26 +478,26 @@ export function SceneCanvas() {
             }}
           />
         </group>
-        {selectedTransformable &&
-          activeObject &&
-          importedHighlightSize.lengthSq() > 0 &&
-          rootRef.current && (
+        {previewHighlights.map(({ center, size }, index) =>
+          rootRef.current ? (
             <mesh
-              position={rootRef.current.worldToLocal(importedHighlightCenter.clone())}
+              key={`highlight-${previewTargetIds[index]}`}
+              position={rootRef.current.worldToLocal(center.clone())}
               scale={[
-                importedHighlightSize.x * 1.03,
-                importedHighlightSize.y * 1.03,
-                importedHighlightSize.z * 1.03,
+                size.x * 1.03,
+                size.y * 1.03,
+                size.z * 1.03,
               ]}
             >
               <boxGeometry args={[1, 1, 1]} />
               <meshBasicMaterial
-                color={previewTargetId === "imported-root" ? "#fbbf24" : "#67e8f9"}
+                color={previewTargetIds[index] === "imported-root" ? "#fbbf24" : "#67e8f9"}
                 wireframe
                 toneMapped={false}
               />
             </mesh>
-          )}
+          ) : null,
+        )}
         {mode === "object" && display.showGizmo && activeObject && (
           <TransformControls
             object={activeObject}
