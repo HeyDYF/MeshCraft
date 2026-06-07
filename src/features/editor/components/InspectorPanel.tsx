@@ -367,6 +367,19 @@ function TextureSlotsSection({
             <div className="mt-1 font-mono text-[12px] text-slate-100">
               {override?.name ?? slot.textureName}
             </div>
+            <div className="mt-2 overflow-hidden rounded-sm bg-black/30 ring-1 ring-white/10">
+              {override?.objectUrl || slot.previewUrl ? (
+                <img
+                  src={override?.objectUrl ?? slot.previewUrl}
+                  alt={override?.name ?? slot.textureName}
+                  className="h-24 w-full object-cover"
+                />
+              ) : (
+                <div className="flex h-24 items-center justify-center px-3 text-center text-[11px] text-slate-500">
+                  {getCopy(locale, "inspector.previewUnavailable")}
+                </div>
+              )}
+            </div>
             <div className="mt-1 font-mono text-[11px] text-slate-500">
               {override?.objectUrl ?? slot.textureId}
             </div>

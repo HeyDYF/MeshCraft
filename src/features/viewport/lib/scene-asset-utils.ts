@@ -92,6 +92,26 @@ function getNumericMaterialProperty(
   return typeof value === "number" ? value : fallback;
 }
 
+function getTexturePreviewUrl(texture: THREE.Texture) {
+  const candidate = texture.source.data ?? texture.image;
+
+  if (!candidate || typeof candidate !== "object") {
+    return undefined;
+  }
+
+  const maybeCurrentSrc = "currentSrc" in candidate ? candidate.currentSrc : undefined;
+  if (typeof maybeCurrentSrc === "string" && maybeCurrentSrc.length > 0) {
+    return maybeCurrentSrc;
+  }
+
+  const maybeSrc = "src" in candidate ? candidate.src : undefined;
+  if (typeof maybeSrc === "string" && maybeSrc.length > 0) {
+    return maybeSrc;
+  }
+
+  return undefined;
+}
+
 export function collectSceneMetrics(root: THREE.Object3D): SceneMetrics {
   let triangles = 0;
   const materials = new Set<THREE.Material>();
@@ -311,6 +331,7 @@ export function extractImportedMaterialBindings(root: THREE.Object3D) {
           channel,
           textureId: getImportedTextureNodeId(materialId, channel),
           textureName: value.name.trim() || `${material.name.trim() || materialId}_${channel}`,
+          previewUrl: getTexturePreviewUrl(value),
         }));
       nodeMaterialBindings[materialId] = materialId;
       if (index === 0) {

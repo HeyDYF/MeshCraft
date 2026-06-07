@@ -44,6 +44,7 @@ export type MaterialTextureSlot = {
   channel: string;
   textureId: string;
   textureName: string;
+  previewUrl?: string;
 };
 
 export type MaterialTextureOverride = {

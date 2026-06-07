@@ -169,9 +169,15 @@ describe("extractImportedMaterialBindings", () => {
     const colorMap = makeTexture();
     colorMap.uuid = "albedo-uuid";
     colorMap.name = "paint_albedo";
+    (colorMap.source as { data: { src: string } }).data = {
+      src: "blob:paint-albedo-preview",
+    };
     const normalMap = makeTexture();
     normalMap.uuid = "normal-uuid";
     normalMap.name = "paint_normal";
+    (normalMap.source as { data: { currentSrc: string } }).data = {
+      currentSrc: "blob:paint-normal-preview",
+    };
     const material = new THREE.MeshStandardMaterial({
       color: "#336699",
       metalness: 0.7,
@@ -211,11 +217,13 @@ describe("extractImportedMaterialBindings", () => {
           channel: "map",
           textureId: getImportedTextureNodeId(materialId, "map"),
           textureName: "paint_albedo",
+          previewUrl: "blob:paint-albedo-preview",
         },
         {
           channel: "normalMap",
           textureId: getImportedTextureNodeId(materialId, "normalMap"),
           textureName: "paint_normal",
+          previewUrl: "blob:paint-normal-preview",
         },
       ],
     });
