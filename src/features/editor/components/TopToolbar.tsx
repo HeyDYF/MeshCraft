@@ -41,11 +41,13 @@ function ToolbarIconButton({
   icon: Icon,
   onClick,
   disabled = false,
+  showInlineLabel = false,
 }: {
   label: string;
   icon: typeof Box;
   onClick: () => void;
   disabled?: boolean;
+  showInlineLabel?: boolean;
 }) {
   return (
     <div className="group relative flex">
@@ -53,11 +55,19 @@ function ToolbarIconButton({
         title={label}
         onClick={onClick}
         disabled={disabled}
-        className="flex size-8 items-center justify-center rounded-sm text-[color:var(--mc-text-muted)] transition-colors hover:bg-[color:var(--mc-hover)] hover:text-[color:var(--mc-text)] focus-visible:bg-[color:var(--mc-hover)] focus-visible:text-[color:var(--mc-text)] focus-visible:outline-none disabled:pointer-events-none disabled:opacity-35"
+        className={`flex items-center justify-center rounded-sm text-[color:var(--mc-text-muted)] transition-colors hover:bg-[color:var(--mc-hover)] hover:text-[color:var(--mc-text)] focus-visible:bg-[color:var(--mc-hover)] focus-visible:text-[color:var(--mc-text)] focus-visible:outline-none disabled:pointer-events-none disabled:opacity-35 ${
+          showInlineLabel ? "h-8 gap-1.5 px-2.5" : "size-8"
+        }`}
+        aria-label={label}
       >
         <Icon className="size-4" strokeWidth={1.8} />
+        {showInlineLabel && (
+          <span className="hidden md:inline font-mono text-[12px] font-medium">
+            {label}
+          </span>
+        )}
       </button>
-      <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 -translate-x-1/2 whitespace-nowrap rounded-sm bg-[color:var(--mc-panel)] px-2 py-1 font-mono text-[10px] text-[color:var(--mc-text)] opacity-0 shadow-lg ring-1 ring-[color:var(--mc-border)] transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
+      <span className="pointer-events-none absolute left-1/2 top-full z-40 mt-2 -translate-x-1/2 whitespace-nowrap rounded-sm bg-[color:var(--mc-panel)] px-2.5 py-1.5 font-mono text-[11px] text-[color:var(--mc-text)] opacity-0 shadow-lg ring-1 ring-[color:var(--mc-border)] transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
         {label}
       </span>
     </div>
@@ -214,7 +224,7 @@ export function TopToolbar() {
   }
 
   return (
-    <header className="flex h-12 shrink-0 items-center gap-4 border-b border-[color:var(--mc-border)] bg-[color:var(--mc-toolbar)] px-3 backdrop-blur">
+    <header className="flex h-14 shrink-0 items-center gap-4 border-b border-[color:var(--mc-border)] bg-[color:var(--mc-toolbar)] px-3 backdrop-blur">
       <input
         ref={inputRef}
         type="file"
@@ -233,7 +243,7 @@ export function TopToolbar() {
         <div className="flex size-7 items-center justify-center rounded-sm bg-cyan-400/10 ring-1 ring-cyan-300/20">
           <Box className="size-4 text-cyan-300" strokeWidth={2.2} />
         </div>
-        <span className="font-mono text-sm font-semibold tracking-tight text-[color:var(--mc-text)]">
+        <span className="font-mono text-base font-semibold tracking-tight text-[color:var(--mc-text)]">
           {getCopy(locale, "brand").replace("Craft", "")}
           <span className="text-cyan-300">Craft</span>
         </span>
@@ -241,7 +251,7 @@ export function TopToolbar() {
 
       <div className="h-5 w-px bg-[color:var(--mc-border)]" />
 
-      <div className="flex items-center gap-0.5">
+      <div className="flex items-center gap-1">
         {[
           { icon: Undo2, label: "Undo", onClick: undo, disabled: !canUndo },
           { icon: Redo2, label: "Redo", onClick: redo, disabled: !canRedo },
@@ -258,7 +268,7 @@ export function TopToolbar() {
 
       <div className="h-5 w-px bg-[color:var(--mc-border)]" />
 
-      <div className="flex items-center gap-0.5">
+      <div className="flex items-center gap-1">
         {[
           { icon: FilePlus2, label: "new", onClick: handleNewProjectClick },
           { icon: FolderOpen, label: "open", onClick: handleProjectOpenClick },
@@ -270,11 +280,12 @@ export function TopToolbar() {
             label={getCopy(locale, `toolbar.${label}`)}
             icon={Icon}
             onClick={onClick}
+            showInlineLabel
           />
         ))}
       </div>
 
-      <div className="mx-auto flex items-center gap-1 rounded-md bg-[color:var(--mc-soft)] p-0.5 ring-1 ring-[color:var(--mc-border)]">
+      <div className="mx-auto flex items-center gap-1 rounded-md bg-[color:var(--mc-soft)] p-1 ring-1 ring-[color:var(--mc-border)]">
         {MODES.map(({ id, icon: Icon }) => {
           const active = mode === id;
 
@@ -282,7 +293,7 @@ export function TopToolbar() {
             <button
               key={id}
               onClick={() => setMode(id)}
-              className={`flex items-center gap-1.5 rounded-sm px-3 py-1 text-xs font-medium transition-colors ${
+              className={`flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-sm font-medium transition-colors ${
                 active
                   ? "bg-cyan-400/10 text-cyan-300 ring-1 ring-cyan-300/25"
                   : "text-[color:var(--mc-text-muted)] hover:text-[color:var(--mc-text)]"
@@ -296,7 +307,7 @@ export function TopToolbar() {
       </div>
 
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-1 rounded-sm bg-[color:var(--mc-soft)] px-1 py-1 ring-1 ring-[color:var(--mc-border)]">
+        <div className="flex items-center gap-1 rounded-sm bg-[color:var(--mc-soft)] px-1.5 py-1 ring-1 ring-[color:var(--mc-border)]">
           <Languages className="size-3.5 text-cyan-300" strokeWidth={1.8} />
           {[
             { id: "en" as Locale, label: "EN" },
@@ -305,7 +316,7 @@ export function TopToolbar() {
             <button
               key={option.id}
               onClick={() => setLocale(option.id)}
-              className={`rounded-sm px-1.5 py-0.5 text-[10px] font-medium transition-colors ${
+              className={`rounded-sm px-1.5 py-1 text-[11px] font-medium transition-colors ${
                 locale === option.id
                   ? "bg-cyan-400/10 text-cyan-300"
                   : "text-[color:var(--mc-text-muted)] hover:text-[color:var(--mc-text)]"
@@ -316,13 +327,13 @@ export function TopToolbar() {
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-1 rounded-sm bg-[color:var(--mc-soft)] px-1 py-1 ring-1 ring-[color:var(--mc-border)]">
+        <div className="flex items-center gap-1 rounded-sm bg-[color:var(--mc-soft)] px-1.5 py-1 ring-1 ring-[color:var(--mc-border)]">
           {[{ id: "dark" as ThemeMode, icon: MoonStar }, { id: "light" as ThemeMode, icon: SunMedium }].map(
             ({ id, icon: Icon }) => (
               <button
                 key={id}
                 onClick={() => setTheme(id)}
-                className={`flex items-center gap-1 rounded-sm px-1.5 py-0.5 text-[10px] font-medium transition-colors ${
+                className={`flex items-center gap-1 rounded-sm px-1.5 py-1 text-[11px] font-medium transition-colors ${
                   theme === id
                     ? "bg-cyan-400/10 text-cyan-300"
                     : "text-[color:var(--mc-text-muted)] hover:text-[color:var(--mc-text)]"
@@ -335,7 +346,7 @@ export function TopToolbar() {
           )}
         </div>
         <div
-          className={`rounded-sm px-2 py-1 font-mono text-[11px] ring-1 ${
+          className={`rounded-sm px-2.5 py-1.5 font-mono text-[12px] ring-1 ${
             importMeta.tone === "error"
               ? "bg-red-500/10 text-red-300 ring-red-400/20"
               : importMeta.tone === "success"
@@ -353,7 +364,7 @@ export function TopToolbar() {
           </span>
         </div>
         <div
-          className={`rounded-sm px-2 py-1 font-mono text-[11px] ring-1 ${
+          className={`rounded-sm px-2.5 py-1.5 font-mono text-[12px] ring-1 ${
             hasUnsavedChanges
               ? "bg-amber-500/10 text-amber-200 ring-amber-400/20"
               : "bg-emerald-500/10 text-emerald-300 ring-emerald-400/20"
@@ -377,13 +388,13 @@ export function TopToolbar() {
 
               clearImportedAsset();
             }}
-            className="max-w-[180px] truncate rounded-sm bg-[color:var(--mc-soft)] px-2 py-1 font-mono text-[11px] text-cyan-300 ring-1 ring-[color:var(--mc-border)]"
+            className="max-w-[180px] truncate rounded-sm bg-[color:var(--mc-soft)] px-2.5 py-1.5 font-mono text-[12px] text-cyan-300 ring-1 ring-[color:var(--mc-border)]"
             title={getCopy(locale, "toolbar.unloadImportedAsset")}
           >
             {importedAssetName}
           </button>
         )}
-        <div className="flex items-center gap-1.5 rounded-sm bg-[color:var(--mc-soft)] px-2 py-1 font-mono text-[11px] ring-1 ring-[color:var(--mc-border)]">
+        <div className="flex items-center gap-1.5 rounded-sm bg-[color:var(--mc-soft)] px-2.5 py-1.5 font-mono text-[12px] ring-1 ring-[color:var(--mc-border)]">
           <Cpu className="size-3 text-cyan-300" strokeWidth={2} />
           <span className="text-[color:var(--mc-text-muted)]">GPU</span>
           <span className="text-[color:var(--mc-text)]">{fps}</span>

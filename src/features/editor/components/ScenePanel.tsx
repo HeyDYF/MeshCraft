@@ -50,7 +50,7 @@ function TreeRow({
     <div>
       <div
         onClick={() => setSelected(node.id, node.name)}
-        className={`group relative flex cursor-pointer items-center gap-1.5 py-[5px] pr-2 text-xs transition-colors ${
+        className={`group relative flex cursor-pointer items-center gap-1.5 py-1.5 pr-2 text-[13px] transition-colors ${
           selected
             ? "bg-cyan-400/12 text-[color:var(--mc-text)]"
             : "text-[color:var(--mc-text-muted)] hover:bg-[color:var(--mc-hover)] hover:text-[color:var(--mc-text)]"
@@ -87,7 +87,7 @@ function TreeRow({
         />
         <span className="truncate font-mono">{node.name}</span>
         {node.tris != null && (
-          <span className="ml-auto shrink-0 font-mono text-[10px] text-[color:var(--mc-text-subtle)]">
+          <span className="ml-auto shrink-0 font-mono text-[11px] text-[color:var(--mc-text-subtle)]">
             {(node.tris / 1000).toFixed(0)}K
           </span>
         )}
@@ -121,7 +121,7 @@ export function ScenePanel() {
           <button
             key={tabOption}
             onClick={() => setTab(tabOption)}
-            className={`flex h-full items-center px-3 text-xs font-medium transition-colors ${
+            className={`flex h-full items-center px-3 text-sm font-medium transition-colors ${
               tab === tabOption
                 ? "border-b border-cyan-300 text-[color:var(--mc-text)]"
                 : "text-[color:var(--mc-text-muted)] hover:text-[color:var(--mc-text)]"
@@ -134,7 +134,7 @@ export function ScenePanel() {
 
       <div className="flex items-center gap-1.5 border-b border-[color:var(--mc-border)] px-3 py-2">
         <Layers className="size-3.5 text-[color:var(--mc-text-muted)]" strokeWidth={1.8} />
-        <span className="font-mono text-[11px] uppercase tracking-wider text-[color:var(--mc-text-muted)]">
+        <span className="font-mono text-[12px] uppercase tracking-wider text-[color:var(--mc-text-muted)]">
           {getCopy(locale, "scenePanel.outliner")}
         </span>
       </div>
@@ -146,7 +146,7 @@ export function ScenePanel() {
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder={getCopy(locale, "scenePanel.searchNodes")}
-            className="w-full bg-transparent font-mono text-[11px] text-[color:var(--mc-text)] outline-none placeholder:text-[color:var(--mc-text-subtle)]"
+            className="w-full bg-transparent font-mono text-[12px] text-[color:var(--mc-text)] outline-none placeholder:text-[color:var(--mc-text-subtle)]"
           />
         </label>
       </div>
@@ -155,13 +155,13 @@ export function ScenePanel() {
         {filteredTree ? (
           <TreeRow node={filteredTree} depth={0} />
         ) : (
-          <div className="px-3 py-4 font-mono text-[11px] text-[color:var(--mc-text-muted)]">
+          <div className="px-3 py-4 font-mono text-[12px] text-[color:var(--mc-text-muted)]">
             {getCopy(locale, "scenePanel.noNodesMatch", query)}
           </div>
         )}
       </div>
 
-      <div className="border-t border-[color:var(--mc-border)] px-3 py-2 font-mono text-[10px] text-[color:var(--mc-text-muted)]">
+      <div className="border-t border-[color:var(--mc-border)] px-3 py-2 font-mono text-[11px] text-[color:var(--mc-text-muted)]">
         {summary.meshes} {getCopy(locale, "scenePanel.meshes")} · {summary.materials}{" "}
         {getCopy(locale, "scenePanel.materialsSummary")} · {summary.textures}{" "}
         {getCopy(locale, "scenePanel.textures")}

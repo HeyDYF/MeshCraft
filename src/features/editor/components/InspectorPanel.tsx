@@ -46,7 +46,7 @@ function Section({
         className="flex w-full items-center gap-2 px-3 py-2.5 text-left transition-colors hover:bg-[color:var(--mc-hover)]"
       >
         <Icon className="size-3.5 text-cyan-300" strokeWidth={1.8} />
-        <span className="font-mono text-[11px] uppercase tracking-wider text-[color:var(--mc-text)]">
+        <span className="font-mono text-[12px] uppercase tracking-wider text-[color:var(--mc-text)]">
           {getCopy(locale, `inspector.${title.toLowerCase()}`)}
         </span>
         <ChevronDown
@@ -82,7 +82,7 @@ function NumberField({
         step={0.01}
         value={Number.isFinite(value) ? value : 0}
         onChange={(event) => onChange(Number.parseFloat(event.target.value) || 0)}
-        className="w-full bg-transparent py-1 pr-1.5 text-right font-mono text-xs text-slate-100 outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
+        className="w-full bg-transparent py-1.5 pr-1.5 text-right font-mono text-[13px] text-slate-100 outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
       />
     </label>
   );
@@ -138,7 +138,7 @@ function Slider({
 
   return (
     <div className="flex items-center gap-2">
-      <span className="w-16 shrink-0 text-[11px] text-slate-500">{label}</span>
+      <span className="w-20 shrink-0 text-[12px] text-slate-500">{label}</span>
       <input
         type="range"
         min={min}
@@ -151,7 +151,7 @@ function Slider({
           background: `linear-gradient(to right, #67e8f9 ${percent}%, rgba(255,255,255,0.1) ${percent}%)`,
         }}
       />
-      <span className="w-9 shrink-0 text-right font-mono text-[11px] text-slate-100">
+      <span className="w-10 shrink-0 text-right font-mono text-[12px] text-slate-100">
         {value.toFixed(2)}
       </span>
     </div>
@@ -168,8 +168,8 @@ function Toggle({
   onChange: (value: boolean) => void;
 }) {
   return (
-    <button onClick={() => onChange(!checked)} className="flex w-full items-center justify-between py-1.5 text-left">
-      <span className="text-[11px] text-slate-500">{label}</span>
+    <button onClick={() => onChange(!checked)} className="flex w-full items-center justify-between py-2 text-left">
+      <span className="text-[12px] text-slate-500">{label}</span>
       <span className={`relative h-4 w-7 rounded-full transition-colors ${checked ? "bg-cyan-300" : "bg-white/10"}`}>
         <span
           className={`absolute top-0.5 size-3 rounded-full bg-slate-950 transition-transform ${
@@ -207,19 +207,19 @@ function TransformSection({ transform }: { transform: TransformState }) {
   return (
     <div className="space-y-2.5">
       <div>
-        <div className="mb-1 flex items-center gap-1 text-[10px] text-slate-500">
+        <div className="mb-1 flex items-center gap-1 text-[11px] text-slate-500">
           <Move className="size-3" /> {getCopy(locale, "inspector.position")}
         </div>
         <VectorRow value={transform.position} group="position" />
       </div>
       <div>
-        <div className="mb-1 flex items-center gap-1 text-[10px] text-slate-500">
+        <div className="mb-1 flex items-center gap-1 text-[11px] text-slate-500">
           <RotateCw className="size-3" /> {getCopy(locale, "inspector.rotation")}
         </div>
         <VectorRow value={transform.rotation} group="rotation" />
       </div>
       <div>
-        <div className="mb-1 flex items-center gap-1 text-[10px] text-slate-500">
+        <div className="mb-1 flex items-center gap-1 text-[11px] text-slate-500">
           <Maximize className="size-3" /> {getCopy(locale, "inspector.scale")}
         </div>
         <VectorRow value={transform.scale} group="scale" />
@@ -241,7 +241,7 @@ function MaterialSection({ material }: { material: MaterialState | null }) {
 
   if (!material || !canEditMaterial) {
     return (
-      <div className="rounded-sm bg-black/20 px-3 py-3 text-[11px] text-slate-500 ring-1 ring-white/10">
+      <div className="rounded-sm bg-black/20 px-3 py-3 text-[12px] text-slate-500 ring-1 ring-white/10">
         {getCopy(locale, "inspector.materialHelp")}
       </div>
     );
@@ -250,7 +250,7 @@ function MaterialSection({ material }: { material: MaterialState | null }) {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <span className="w-16 shrink-0 text-[11px] text-slate-500">
+        <span className="w-20 shrink-0 text-[12px] text-slate-500">
           {getCopy(locale, "inspector.baseColor")}
         </span>
         <label className="flex flex-1 items-center gap-2 rounded-sm bg-black/20 px-2 py-1 ring-1 ring-white/10">
@@ -260,7 +260,7 @@ function MaterialSection({ material }: { material: MaterialState | null }) {
             onChange={(event) => setMaterialField("baseColor", event.target.value)}
             className="size-4 cursor-pointer rounded-sm border-0 bg-transparent p-0"
           />
-          <span className="font-mono text-[11px] uppercase text-slate-100">
+          <span className="font-mono text-[12px] uppercase text-slate-100">
             {material.baseColor}
           </span>
         </label>
@@ -295,7 +295,7 @@ function TextureSlotsSection({
 
   if (!canInspect) {
     return (
-      <div className="rounded-sm bg-black/20 px-3 py-3 text-[11px] text-slate-500 ring-1 ring-white/10">
+      <div className="rounded-sm bg-black/20 px-3 py-3 text-[12px] text-slate-500 ring-1 ring-white/10">
         {getCopy(locale, "inspector.textureHelp")}
       </div>
     );
@@ -303,7 +303,7 @@ function TextureSlotsSection({
 
   if (!slots.length) {
     return (
-      <div className="rounded-sm bg-black/20 px-3 py-3 text-[11px] text-slate-500 ring-1 ring-white/10">
+      <div className="rounded-sm bg-black/20 px-3 py-3 text-[12px] text-slate-500 ring-1 ring-white/10">
         {getCopy(locale, "inspector.noTextureMaps")}
       </div>
     );
@@ -352,25 +352,25 @@ function TextureSlotsSection({
               onChange={handleTextureChange}
             />
             <div className="flex items-center gap-2">
-              <div className="text-[10px] uppercase tracking-wide text-slate-600">
+              <div className="text-[11px] uppercase tracking-wide text-slate-600">
                 {slot.channel}
               </div>
               {override && (
-                <span className="rounded-sm bg-cyan-400/10 px-1.5 py-0.5 text-[10px] font-mono text-cyan-300 ring-1 ring-cyan-300/20">
+                <span className="rounded-sm bg-cyan-400/10 px-1.5 py-0.5 text-[11px] font-mono text-cyan-300 ring-1 ring-cyan-300/20">
                   {getCopy(locale, "inspector.override")}
                 </span>
               )}
             </div>
-            <div className="mt-1 font-mono text-[11px] text-slate-100">
+            <div className="mt-1 font-mono text-[12px] text-slate-100">
               {override?.name ?? slot.textureName}
             </div>
-            <div className="mt-1 font-mono text-[10px] text-slate-500">
+            <div className="mt-1 font-mono text-[11px] text-slate-500">
               {override?.objectUrl ?? slot.textureId}
             </div>
             <div className="mt-2 flex items-center gap-2">
               <button
                 onClick={() => inputRefs.current[slot.channel]?.click()}
-                className="inline-flex items-center gap-1 rounded-sm bg-black/30 px-2 py-1 text-[10px] font-medium text-slate-200 ring-1 ring-white/10 transition-colors hover:bg-white/5"
+                className="inline-flex items-center gap-1 rounded-sm bg-black/30 px-2.5 py-1.5 text-[11px] font-medium text-slate-200 ring-1 ring-white/10 transition-colors hover:bg-white/5"
               >
                 <Upload className="size-3" strokeWidth={1.8} />
                 {getCopy(locale, "inspector.replace")}
@@ -380,7 +380,7 @@ function TextureSlotsSection({
                   activeMaterialId && clearImportedTextureOverride(activeMaterialId, slot.channel)
                 }
                 disabled={!override}
-                className="inline-flex items-center gap-1 rounded-sm bg-black/20 px-2 py-1 text-[10px] font-medium text-slate-400 ring-1 ring-white/10 transition-colors enabled:hover:bg-white/5 enabled:hover:text-slate-100 disabled:opacity-40"
+                className="inline-flex items-center gap-1 rounded-sm bg-black/20 px-2.5 py-1.5 text-[11px] font-medium text-slate-400 ring-1 ring-white/10 transition-colors enabled:hover:bg-white/5 enabled:hover:text-slate-100 disabled:opacity-40"
               >
                 <RefreshCcw className="size-3" strokeWidth={1.8} />
                 {getCopy(locale, "inspector.reset")}
@@ -401,7 +401,7 @@ function DisplaySection({ display }: { display: DisplayState }) {
   return (
     <div className="space-y-3">
       <div className="space-y-2">
-        <span className="text-[11px] text-slate-500">{getCopy(locale, "inspector.shading")}</span>
+        <span className="text-[12px] text-slate-500">{getCopy(locale, "inspector.shading")}</span>
         <div className="grid grid-cols-2 gap-1.5">
           {SHADING.map((option) => {
             const active = display.shading === option.id;
@@ -410,7 +410,7 @@ function DisplaySection({ display }: { display: DisplayState }) {
               <button
                 key={option.id}
                 onClick={() => setShading(option.id)}
-                className={`rounded-sm px-2 py-1.5 text-[11px] transition-colors ${
+                className={`rounded-sm px-2.5 py-2 text-[12px] transition-colors ${
                   active
                     ? "bg-cyan-400/10 text-cyan-300 ring-1 ring-cyan-300/30"
                     : "bg-black/20 text-slate-500 ring-1 ring-white/10 hover:text-slate-100"
@@ -451,10 +451,10 @@ function PerformanceSection() {
         { label: getCopy(locale, "inspector.target"), value: performance.fps >= 60 ? getCopy(locale, "inspector.stable") : getCopy(locale, "inspector.warm") },
       ].map((item) => (
         <div key={item.label} className="rounded-sm bg-black/20 px-2 py-2 ring-1 ring-white/10">
-          <div className="text-[10px] uppercase tracking-wide text-slate-600">
+          <div className="text-[11px] uppercase tracking-wide text-slate-600">
             {item.label}
           </div>
-          <div className="mt-1 font-mono text-[11px] text-slate-100">{item.value}</div>
+          <div className="mt-1 font-mono text-[12px] text-slate-100">{item.value}</div>
         </div>
       ))}
     </div>
@@ -469,14 +469,14 @@ function SelectionSection() {
 
   return (
     <div className="space-y-2 rounded-sm bg-black/20 px-3 py-3 ring-1 ring-white/10">
-      <div className="text-[10px] uppercase tracking-wide text-slate-600">
+      <div className="text-[11px] uppercase tracking-wide text-slate-600">
         {getCopy(locale, "inspector.selectedNode")}
       </div>
-      <div className="font-mono text-[11px] text-slate-100">{selectedName}</div>
-      <div className="font-mono text-[10px] text-slate-500">{selectedId}</div>
-      <div className="pt-1 text-[11px] text-slate-500">
+      <div className="font-mono text-[12px] text-slate-100">{selectedName}</div>
+      <div className="font-mono text-[11px] text-slate-500">{selectedId}</div>
+      <div className="pt-1 text-[12px] text-slate-500">
         {getCopy(locale, "inspector.materialSlot")}:{" "}
-        <span className="font-mono text-slate-300">
+        <span className="font-mono text-[12px] text-slate-300">
           {activeMaterialId ?? getCopy(locale, "inspector.importedUnbound")}
         </span>
       </div>
@@ -515,8 +515,8 @@ export function InspectorPanel() {
     <aside className="mc-thin-scroll flex w-72 shrink-0 flex-col overflow-y-auto border-l border-[color:var(--mc-border)] bg-[color:var(--mc-panel)]">
       <div className="flex h-9 shrink-0 items-center gap-2 border-b border-[color:var(--mc-border)] px-3">
         <span className="size-1.5 rounded-full bg-cyan-300" />
-        <span className="truncate font-mono text-xs text-[color:var(--mc-text)]">{selectedName}</span>
-        <span className="ml-auto font-mono text-[10px] text-[color:var(--mc-text-muted)]">
+        <span className="truncate font-mono text-sm text-[color:var(--mc-text)]">{selectedName}</span>
+        <span className="ml-auto font-mono text-[11px] text-[color:var(--mc-text-muted)]">
           {getCopy(locale, "inspector.inspector")}
         </span>
       </div>
