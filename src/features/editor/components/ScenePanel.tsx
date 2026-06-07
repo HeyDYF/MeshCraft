@@ -41,15 +41,25 @@ function TreeRow({
 }) {
   const [open, setOpen] = useState(true);
   const selectedId = useEditorStore((state) => state.selectedId);
+  const selectedIds = useEditorStore((state) => state.selectedIds);
   const setSelected = useEditorStore((state) => state.setSelected);
+  const toggleSelected = useEditorStore((state) => state.toggleSelected);
   const Icon = KIND_ICON[node.kind];
   const hasChildren = Boolean(node.children?.length);
-  const selected = selectedId === node.id;
+  const selected = selectedIds.includes(node.id);
+  const primarySelected = selectedId === node.id;
 
   return (
     <div>
       <div
-        onClick={() => setSelected(node.id, node.name)}
+        onClick={(event) => {
+          if (event.metaKey || event.ctrlKey) {
+            toggleSelected(node.id, node.name);
+            return;
+          }
+
+          setSelected(node.id, node.name);
+        }}
         className={`group relative flex cursor-pointer items-center gap-1.5 py-1.5 pr-2 text-[13px] transition-colors ${
           selected
             ? "bg-cyan-400/12 text-[color:var(--mc-text)]"
@@ -57,7 +67,9 @@ function TreeRow({
         }`}
         style={{ paddingLeft: depth * 14 + 8 }}
       >
-        {selected && <span className="absolute left-0 top-0 h-full w-0.5 bg-cyan-300" />}
+        {primarySelected && (
+          <span className="absolute left-0 top-0 h-full w-0.5 bg-cyan-300" />
+        )}
         {hasChildren ? (
           <button
             onClick={(event) => {

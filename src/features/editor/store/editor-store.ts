@@ -45,6 +45,7 @@ type EditorHistoryEntry = {
   locale: Locale;
   theme: ThemeMode;
   selectedId: string;
+  selectedIds: string[];
   selectedName: string;
   activeMaterialId: string | null;
   materialLibrary: Record<string, MaterialState>;
@@ -99,6 +100,7 @@ function captureHistoryEntry(state: EditorState): EditorHistoryEntry {
     locale: state.locale,
     theme: state.theme,
     selectedId: state.selectedId,
+    selectedIds: state.selectedIds,
     selectedName: state.selectedName,
     activeMaterialId: state.activeMaterialId,
     materialLibrary: state.materialLibrary,
@@ -135,6 +137,7 @@ type EditorState = {
   locale: Locale;
   theme: ThemeMode;
   selectedId: string;
+  selectedIds: string[];
   selectedName: string;
   importedAssetName: string | null;
   importedAssetUrl: string | null;
@@ -165,6 +168,7 @@ type EditorState = {
   setLocale: (locale: Locale) => void;
   setTheme: (theme: ThemeMode) => void;
   setSelected: (id: string, name: string) => void;
+  toggleSelected: (id: string, name: string) => void;
   setImportedAsset: (name: string, url: string) => void;
   setImportStatus: (status: ImportStatus, errorMessage?: string | null) => void;
   clearImportedAsset: () => void;
@@ -205,6 +209,7 @@ export const useEditorStore = create<EditorState>((set) => ({
   locale: getInitialLocale(),
   theme: getInitialTheme(),
   selectedId: "mesh-core",
+  selectedIds: ["mesh-core"],
   selectedName: "Core_Rotor",
   importedAssetName: null,
   importedAssetUrl: null,
@@ -238,6 +243,7 @@ export const useEditorStore = create<EditorState>((set) => ({
   setSelected: (id, name) =>
     set((state) => ({
       selectedId: id,
+      selectedIds: [id],
       selectedName: name,
       activeMaterialId: resolveSelectionMaterialBinding(
         id,
@@ -250,6 +256,37 @@ export const useEditorStore = create<EditorState>((set) => ({
         state.transform,
       ),
     })),
+  toggleSelected: (id, _name) =>
+    set((state) => {
+      if (state.selectedIds.includes(id)) {
+        const remaining = state.selectedIds.filter((selectedId) => selectedId !== id);
+
+        if (!remaining.length) {
+          return {};
+        }
+
+        const nextSelectedId = remaining[0];
+        return {
+          selectedId: nextSelectedId,
+          selectedIds: remaining,
+          selectedName: nextSelectedId === state.selectedId ? state.selectedName : nextSelectedId,
+          activeMaterialId: resolveSelectionMaterialBinding(
+            nextSelectedId,
+            state.importedNodeMaterialBindings,
+          ),
+          transform: resolveSelectionTransform(
+            nextSelectedId,
+            state.objectTransforms,
+            state.importedObjectTransforms,
+            state.transform,
+          ),
+        };
+      }
+
+      return {
+        selectedIds: [...state.selectedIds, id],
+      };
+    }),
   setImportedAsset: (name, url) =>
     set((state) => {
       if (state.importedAssetUrl) {
@@ -268,6 +305,7 @@ export const useEditorStore = create<EditorState>((set) => ({
         importedMaterialTextureSlots: {},
         importedMaterialTextureOverrides: {},
         selectedId: "imported-root",
+        selectedIds: ["imported-root"],
         selectedName: name.replace(/\.[^.]+$/, ""),
         importedObjectTransforms: {},
         performance: {
@@ -309,6 +347,7 @@ export const useEditorStore = create<EditorState>((set) => ({
         sceneTree: SCENE_TREE,
         transformTool: state.transformTool,
         selectedId: fallbackSelectedId,
+        selectedIds: [fallbackSelectedId],
         selectedName: fallbackSelectedName,
         transform: getSelectedTransform(fallbackSelectedId, state.objectTransforms),
         hasUnsavedChanges: true,
@@ -369,17 +408,63 @@ export const useEditorStore = create<EditorState>((set) => ({
     set((state) => pushHistoryEntry(state, { transformTool, hasUnsavedChanges: true })),
   setTransform: (transform) =>
     set((state) => {
-      const updated = updateSelectionTransformMaps(
-        state.selectedId,
-        transform,
-        state.objectTransforms,
-        state.importedObjectTransforms,
+      const targetIds = state.selectedIds.filter(
+        (selectedId) =>
+          selectedId in state.objectTransforms || selectedId in state.importedObjectTransforms,
       );
+      let proceduralTransforms = state.objectTransforms;
+      let importedTransforms = state.importedObjectTransforms;
+      const delta = {
+        position: {
+          x: transform.position.x - state.transform.position.x,
+          y: transform.position.y - state.transform.position.y,
+          z: transform.position.z - state.transform.position.z,
+        },
+        rotation: {
+          x: transform.rotation.x - state.transform.rotation.x,
+          y: transform.rotation.y - state.transform.rotation.y,
+          z: transform.rotation.z - state.transform.rotation.z,
+        },
+        scale: {
+          x: transform.scale.x - state.transform.scale.x,
+          y: transform.scale.y - state.transform.scale.y,
+          z: transform.scale.z - state.transform.scale.z,
+        },
+      };
+
+      targetIds.forEach((selectedId) => {
+        const currentTransform =
+          proceduralTransforms[selectedId] ?? importedTransforms[selectedId] ?? state.transform;
+        const updated = updateSelectionTransformMaps(
+          selectedId,
+          {
+            position: {
+              x: currentTransform.position.x + delta.position.x,
+              y: currentTransform.position.y + delta.position.y,
+              z: currentTransform.position.z + delta.position.z,
+            },
+            rotation: {
+              x: currentTransform.rotation.x + delta.rotation.x,
+              y: currentTransform.rotation.y + delta.rotation.y,
+              z: currentTransform.rotation.z + delta.rotation.z,
+            },
+            scale: {
+              x: currentTransform.scale.x + delta.scale.x,
+              y: currentTransform.scale.y + delta.scale.y,
+              z: currentTransform.scale.z + delta.scale.z,
+            },
+          },
+          proceduralTransforms,
+          importedTransforms,
+        );
+        proceduralTransforms = updated.proceduralTransforms;
+        importedTransforms = updated.importedTransforms;
+      });
 
       return pushHistoryEntry(state, {
         transform,
-        objectTransforms: updated.proceduralTransforms,
-        importedObjectTransforms: updated.importedTransforms,
+        objectTransforms: proceduralTransforms,
+        importedObjectTransforms: importedTransforms,
         hasUnsavedChanges: true,
       });
     }),
@@ -392,17 +477,37 @@ export const useEditorStore = create<EditorState>((set) => ({
           [axis]: value,
         },
       };
-      const updated = updateSelectionTransformMaps(
-        state.selectedId,
-        nextTransform,
-        state.objectTransforms,
-        state.importedObjectTransforms,
+      const delta = nextTransform[group][axis] - state.transform[group][axis];
+      const targetIds = state.selectedIds.filter(
+        (selectedId) =>
+          selectedId in state.objectTransforms || selectedId in state.importedObjectTransforms,
       );
+      let proceduralTransforms = state.objectTransforms;
+      let importedTransforms = state.importedObjectTransforms;
+
+      targetIds.forEach((selectedId) => {
+        const currentTransform =
+          proceduralTransforms[selectedId] ?? importedTransforms[selectedId] ?? state.transform;
+        const updated = updateSelectionTransformMaps(
+          selectedId,
+          {
+            ...currentTransform,
+            [group]: {
+              ...currentTransform[group],
+              [axis]: currentTransform[group][axis] + delta,
+            },
+          },
+          proceduralTransforms,
+          importedTransforms,
+        );
+        proceduralTransforms = updated.proceduralTransforms;
+        importedTransforms = updated.importedTransforms;
+      });
 
       return pushHistoryEntry(state, {
         transform: nextTransform,
-        objectTransforms: updated.proceduralTransforms,
-        importedObjectTransforms: updated.importedTransforms,
+        objectTransforms: proceduralTransforms,
+        importedObjectTransforms: importedTransforms,
         hasUnsavedChanges: true,
       });
     }),
@@ -472,6 +577,7 @@ export const useEditorStore = create<EditorState>((set) => ({
         locale: state.locale,
         theme: state.theme,
         ...applied,
+        selectedIds: [applied.selectedId],
         hasUnsavedChanges: false,
         canUndo: false,
         canRedo: false,
@@ -492,6 +598,7 @@ export const useEditorStore = create<EditorState>((set) => ({
         locale: state.locale,
         theme: state.theme,
         selectedId: "mesh-core",
+        selectedIds: ["mesh-core"],
         selectedName: "Core_Rotor",
         importedAssetName: null,
         importedAssetUrl: null,

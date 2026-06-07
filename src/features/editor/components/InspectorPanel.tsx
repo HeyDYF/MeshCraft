@@ -557,6 +557,7 @@ function AnalyzeSceneSection() {
 function SelectionSection() {
   const selectedName = useEditorStore((state) => state.selectedName);
   const selectedId = useEditorStore((state) => state.selectedId);
+  const selectedIds = useEditorStore((state) => state.selectedIds);
   const activeMaterialId = useEditorStore((state) => state.activeMaterialId);
   const sceneTree = useEditorStore((state) => state.sceneTree);
   const mode = useEditorStore((state) => state.mode);
@@ -571,6 +572,12 @@ function SelectionSection() {
       </div>
       <div className="font-mono text-[12px] text-slate-100">{selectedName}</div>
       <div className="font-mono text-[11px] text-slate-500">{selectedId}</div>
+      <div className="pt-1 text-[12px] text-slate-500">
+        {getCopy(locale, "inspector.selectionCount")}:{" "}
+        <span className="font-mono text-[12px] text-slate-300">
+          {selectedIds.length.toLocaleString()}
+        </span>
+      </div>
       <div className="pt-1 text-[12px] text-slate-500">
         {getCopy(locale, "inspector.materialSlot")}:{" "}
         <span className="font-mono text-[12px] text-slate-300">

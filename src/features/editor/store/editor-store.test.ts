@@ -7,6 +7,7 @@ describe("editor store unsaved changes workflow", () => {
     useEditorStore.setState({
       mode: "object",
       selectedId: "mesh-core",
+      selectedIds: ["mesh-core"],
       selectedName: "Core_Rotor",
       importedAssetName: null,
       importedAssetUrl: null,
@@ -302,5 +303,25 @@ describe("editor store unsaved changes workflow", () => {
 
     expect(useEditorStore.getState().frameSelectionRequestNonce).toBe(1);
     expect(useEditorStore.getState().hasUnsavedChanges).toBe(false);
+  });
+
+  it("supports additive multi-selection without losing the primary selection", () => {
+    useEditorStore.getState().toggleSelected("mesh-housing", "Housing_Shell");
+    useEditorStore.getState().toggleSelected("mesh-vents", "Intake_Vents");
+
+    expect(useEditorStore.getState().selectedId).toBe("mesh-core");
+    expect(useEditorStore.getState().selectedIds).toEqual([
+      "mesh-core",
+      "mesh-housing",
+      "mesh-vents",
+    ]);
+  });
+
+  it("applies transform axis edits across the current multi-selection", () => {
+    useEditorStore.getState().toggleSelected("mesh-housing", "Housing_Shell");
+    useEditorStore.getState().setTransformAxis("position", "x", 2);
+
+    expect(useEditorStore.getState().objectTransforms["mesh-core"].position.x).toBe(2);
+    expect(useEditorStore.getState().objectTransforms["mesh-housing"].position.x).toBe(2);
   });
 });
