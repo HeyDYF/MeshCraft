@@ -17,6 +17,7 @@ import {
   Redo2,
 } from "lucide-react";
 import { useRef, type ChangeEvent } from "react";
+import { describeExportStatus } from "../lib/export-status";
 import { isSupportedImportFile, readFileAsDataUrl } from "../lib/import-file";
 import { describeImportStatus } from "../lib/import-status";
 import { getCopy } from "../lib/ui-copy";
@@ -96,6 +97,9 @@ export function TopToolbar() {
   const selectedId = useEditorStore((state) => state.selectedId);
   const selectedName = useEditorStore((state) => state.selectedName);
   const transformTool = useEditorStore((state) => state.transformTool);
+  const exportStatus = useEditorStore((state) => state.exportStatus);
+  const exportError = useEditorStore((state) => state.exportError);
+  const exportFileName = useEditorStore((state) => state.exportFileName);
   const activeMaterialId = useEditorStore((state) => state.activeMaterialId);
   const materialLibrary = useEditorStore((state) => state.materialLibrary);
   const objectTransforms = useEditorStore((state) => state.objectTransforms);
@@ -126,6 +130,12 @@ export function TopToolbar() {
     importStatus,
     importedAssetName,
     importError,
+  );
+  const exportMeta = describeExportStatus(
+    locale,
+    exportStatus,
+    exportFileName,
+    exportError,
   );
 
   function handleImportClick() {
@@ -376,6 +386,19 @@ export function TopToolbar() {
             ? getCopy(locale, "toolbar.unsaved")
             : getCopy(locale, "toolbar.saved")}
         </div>
+        <div
+          className={`rounded-sm px-2.5 py-1.5 font-mono text-[13px] ring-1 ${
+            exportMeta.tone === "loading"
+              ? "bg-cyan-400/10 text-cyan-300 ring-cyan-300/20"
+              : exportMeta.tone === "success"
+                ? "bg-emerald-500/10 text-emerald-300 ring-emerald-400/20"
+                : exportMeta.tone === "error"
+                  ? "bg-rose-500/10 text-rose-200 ring-rose-400/20"
+                  : "bg-[color:var(--mc-soft)] text-[color:var(--mc-text-muted)] ring-[color:var(--mc-border)]"
+          }`}
+        >
+          {exportMeta.label}
+        </div>
         {importedAssetName && (
           <button
             onClick={() => {
@@ -404,6 +427,7 @@ export function TopToolbar() {
         </div>
         <button
           onClick={requestSceneExport}
+          disabled={exportStatus === "exporting"}
           className="flex items-center gap-1.5 rounded-sm bg-cyan-300 px-3 py-1.5 text-sm font-semibold text-slate-950 transition-opacity hover:opacity-90"
         >
           <Sparkles className="size-3.5" strokeWidth={2} />

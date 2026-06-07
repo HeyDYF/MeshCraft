@@ -418,6 +418,22 @@ describe("editor store unsaved changes workflow", () => {
     expect(useEditorStore.getState().hasUnsavedChanges).toBe(false);
   });
 
+  it("marks scene export as in progress without dirtying the project", () => {
+    useEditorStore.getState().requestSceneExport();
+
+    expect(useEditorStore.getState().exportRequestNonce).toBe(1);
+    expect(useEditorStore.getState().exportStatus).toBe("exporting");
+    expect(useEditorStore.getState().hasUnsavedChanges).toBe(false);
+  });
+
+  it("stores export success metadata without dirtying the project", () => {
+    useEditorStore.getState().setExportStatus("success", null, "robot-export.glb");
+
+    expect(useEditorStore.getState().exportStatus).toBe("success");
+    expect(useEditorStore.getState().exportFileName).toBe("robot-export.glb");
+    expect(useEditorStore.getState().hasUnsavedChanges).toBe(false);
+  });
+
   it("supports additive multi-selection without losing the primary selection", () => {
     useEditorStore.getState().toggleSelected("mesh-housing", "Housing_Shell");
     useEditorStore.getState().toggleSelected("mesh-vents", "Intake_Vents");

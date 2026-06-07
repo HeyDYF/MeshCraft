@@ -75,6 +75,7 @@ export function SceneCanvas() {
   const setSelected = useEditorStore((state) => state.setSelected);
   const setActiveMaterialId = useEditorStore((state) => state.setActiveMaterialId);
   const setTransform = useEditorStore((state) => state.setTransform);
+  const setExportStatus = useEditorStore((state) => state.setExportStatus);
   const proceduralExportRootRef = useRef<THREE.Group>(null);
   const importedExportRootRef = useRef<THREE.Group>(null);
   const importedObjectMapRef = useRef(new Map<string, THREE.Object3D>());
@@ -642,10 +643,20 @@ export function SceneCanvas() {
       : proceduralExportRootRef.current;
 
     if (!activeRoot) {
+      setExportStatus("error", "No exportable scene root is available.");
       return;
     }
 
-    void exportSceneToGlb(activeRoot.clone(true), importedAssetName);
+    void exportSceneToGlb(activeRoot.clone(true), importedAssetName)
+      .then((fileName) => {
+        setExportStatus("success", null, fileName);
+      })
+      .catch((error: unknown) => {
+        setExportStatus(
+          "error",
+          error instanceof Error ? error.message : "Failed to export scene.",
+        );
+      });
   }, [exportRequestNonce, importedAssetName, importedAssetUrl]);
 
   useEffect(() => {

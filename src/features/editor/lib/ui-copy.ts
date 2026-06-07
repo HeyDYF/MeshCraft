@@ -145,6 +145,12 @@ const UI_COPY: Record<Locale, CopyTree> = {
       invalidTexture: "Only .png, .jpg, .jpeg, and .webp textures are supported",
       readImportFailed: "Failed to read import file",
     },
+    exportStatus: {
+      ready: "Export Ready",
+      exporting: (fileName: string) => `Exporting ${fileName}`,
+      success: (fileName: string) => `Exported ${fileName}`,
+      failed: "Export failed",
+    },
   },
   "zh-CN": {
     brand: "MeshCraft",
@@ -284,6 +290,12 @@ const UI_COPY: Record<Locale, CopyTree> = {
       invalidProject: "无效的 MeshCraft 项目文件",
       invalidTexture: "仅支持 .png、.jpg、.jpeg 和 .webp 贴图",
       readImportFailed: "读取导入文件失败",
+    },
+    exportStatus: {
+      ready: "可导出",
+      exporting: (fileName: string) => `正在导出 ${fileName}`,
+      success: (fileName: string) => `已导出 ${fileName}`,
+      failed: "导出失败",
     },
   },
 };

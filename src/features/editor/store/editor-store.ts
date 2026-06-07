@@ -4,6 +4,7 @@ import {
   getMaterialBindingForSelection,
   resolveSelectionMaterialBinding,
 } from "../lib/editor-bindings";
+import type { ExportStatus } from "../lib/export-status";
 import type { ImportStatus } from "../lib/import-status";
 import {
   findSceneNodeById,
@@ -170,6 +171,9 @@ type EditorState = {
   display: DisplayState;
   performance: PerformanceStats;
   exportRequestNonce: number;
+  exportStatus: ExportStatus;
+  exportError: string | null;
+  exportFileName: string | null;
   viewportCaptureRequestNonce: number;
   frameSelectionRequestNonce: number;
   hasUnsavedChanges: boolean;
@@ -218,6 +222,11 @@ type EditorState = {
   undo: () => void;
   redo: () => void;
   requestSceneExport: () => void;
+  setExportStatus: (
+    status: ExportStatus,
+    errorMessage?: string | null,
+    fileName?: string | null,
+  ) => void;
   requestViewportCapture: () => void;
   requestFrameSelection: () => void;
 };
@@ -250,6 +259,9 @@ export const useEditorStore = create<EditorState>((set) => ({
   display: DEFAULT_DISPLAY,
   performance: DEFAULT_PERFORMANCE,
   exportRequestNonce: 0,
+  exportStatus: "idle",
+  exportError: null,
+  exportFileName: null,
   viewportCaptureRequestNonce: 0,
   frameSelectionRequestNonce: 0,
   hasUnsavedChanges: false,
@@ -321,6 +333,9 @@ export const useEditorStore = create<EditorState>((set) => ({
         importedAssetUrl: url,
         importStatus: "loading",
         importError: null,
+        exportStatus: "idle",
+        exportError: null,
+        exportFileName: null,
         activeMaterialId: null,
         importedMaterialLibrary: {},
         importedNodeMaterialBindings: {},
@@ -358,6 +373,9 @@ export const useEditorStore = create<EditorState>((set) => ({
         importedAssetUrl: null,
         importStatus: "idle",
         importError: null,
+        exportStatus: "idle",
+        exportError: null,
+        exportFileName: null,
         activeMaterialId: getMaterialBindingForSelection(fallbackSelectedId),
         materialLibrary: state.materialLibrary,
         importedMaterialLibrary: {},
@@ -629,6 +647,9 @@ export const useEditorStore = create<EditorState>((set) => ({
         locale: state.locale,
         theme: state.theme,
         ...applied,
+        exportStatus: "idle",
+        exportError: null,
+        exportFileName: null,
         selectedIds: [applied.selectedId],
         hasUnsavedChanges: false,
         canUndo: false,
@@ -669,6 +690,9 @@ export const useEditorStore = create<EditorState>((set) => ({
         transform: getSelectedTransform("mesh-core", DEFAULT_PROCEDURAL_TRANSFORMS),
         display: DEFAULT_DISPLAY,
         performance: DEFAULT_PERFORMANCE,
+        exportStatus: "idle",
+        exportError: null,
+        exportFileName: null,
         hasUnsavedChanges: false,
         canUndo: false,
         canRedo: false,
@@ -716,7 +740,15 @@ export const useEditorStore = create<EditorState>((set) => ({
   requestSceneExport: () =>
     set((state) => ({
       exportRequestNonce: state.exportRequestNonce + 1,
+      exportStatus: "exporting",
+      exportError: null,
     })),
+  setExportStatus: (status, errorMessage = null, fileName = null) =>
+    set({
+      exportStatus: status,
+      exportError: errorMessage,
+      exportFileName: fileName,
+    }),
   requestViewportCapture: () =>
     set((state) => ({
       viewportCaptureRequestNonce: state.viewportCaptureRequestNonce + 1,

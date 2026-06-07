@@ -30,9 +30,11 @@ export async function exportSceneToGlb(
 
   const blob = new Blob([result], { type: "model/gltf-binary" });
   const objectUrl = URL.createObjectURL(blob);
+  const fileName = buildExportFileName(importedAssetName);
   const link = document.createElement("a");
   link.href = objectUrl;
-  link.download = buildExportFileName(importedAssetName);
+  link.download = fileName;
   link.click();
   URL.revokeObjectURL(objectUrl);
+  return fileName;
 }

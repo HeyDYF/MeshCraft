@@ -15,6 +15,7 @@ import {
 import { useRef, useState, type ChangeEvent, type ReactNode } from "react";
 import { deriveAnalyzeSummary } from "../lib/analyze-mode";
 import { getSelectionCapabilities } from "../lib/editor-bindings";
+import { describeExportStatus } from "../lib/export-status";
 import { readFileAsDataUrl } from "../lib/import-file";
 import {
   getImportedMaterialSlotOptions,
@@ -30,6 +31,7 @@ import type {
   ShadingMode,
   TransformState,
 } from "../types";
+import { summarizeSceneTree } from "../../viewport/lib/scene-asset-utils";
 
 function getRevealTabForNodeId(nodeId: string) {
   if (nodeId.includes(":texture:")) {
@@ -529,7 +531,19 @@ function RenderSection() {
   const locale = useEditorStore((state) => state.locale);
   const importedAssetName = useEditorStore((state) => state.importedAssetName);
   const display = useEditorStore((state) => state.display);
+  const sceneTree = useEditorStore((state) => state.sceneTree);
+  const exportStatus = useEditorStore((state) => state.exportStatus);
+  const exportError = useEditorStore((state) => state.exportError);
+  const exportFileName = useEditorStore((state) => state.exportFileName);
   const requestViewportCapture = useEditorStore((state) => state.requestViewportCapture);
+  const requestSceneExport = useEditorStore((state) => state.requestSceneExport);
+  const summary = summarizeSceneTree(sceneTree);
+  const exportMeta = describeExportStatus(
+    locale,
+    exportStatus,
+    exportFileName,
+    exportError,
+  );
 
   return (
     <div className="space-y-3">
@@ -551,6 +565,22 @@ function RenderSection() {
             label: getCopy(locale, "inspector.captureShadows"),
             value: display.showShadows ? getCopy(locale, "inspector.enabled") : getCopy(locale, "inspector.disabled"),
           },
+          {
+            label: getCopy(locale, "inspector.meshes"),
+            value: summary.meshes.toLocaleString(),
+          },
+          {
+            label: getCopy(locale, "inspector.materialsCount"),
+            value: summary.materials.toLocaleString(),
+          },
+          {
+            label: getCopy(locale, "inspector.texturesCount"),
+            value: summary.textures.toLocaleString(),
+          },
+          {
+            label: getCopy(locale, "inspector.target"),
+            value: exportMeta.label,
+          },
         ].map((item) => (
           <div key={item.label} className="rounded-sm bg-black/20 px-2 py-2 ring-1 ring-white/10">
             <div className="text-[11px] uppercase tracking-wide text-slate-600">
@@ -560,6 +590,15 @@ function RenderSection() {
           </div>
         ))}
       </div>
+
+      <button
+        onClick={requestSceneExport}
+        disabled={exportStatus === "exporting"}
+        className="flex w-full items-center justify-center gap-2 rounded-sm bg-emerald-300 px-3 py-2 text-sm font-semibold text-slate-950 transition-opacity hover:opacity-90 disabled:opacity-50"
+      >
+        <Upload className="size-4" strokeWidth={2} />
+        {getCopy(locale, "toolbar.exportGlb")}
+      </button>
 
       <button
         onClick={requestViewportCapture}
