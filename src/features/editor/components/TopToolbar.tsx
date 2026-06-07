@@ -36,6 +36,34 @@ const MODES: { id: EditorMode; label: string; icon: typeof Box }[] = [
   { id: "analyze", label: "Analyze", icon: Activity },
 ];
 
+function ToolbarIconButton({
+  label,
+  icon: Icon,
+  onClick,
+  disabled = false,
+}: {
+  label: string;
+  icon: typeof Box;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="group relative flex">
+      <button
+        title={label}
+        onClick={onClick}
+        disabled={disabled}
+        className="flex size-8 items-center justify-center rounded-sm text-[color:var(--mc-text-muted)] transition-colors hover:bg-[color:var(--mc-hover)] hover:text-[color:var(--mc-text)] focus-visible:bg-[color:var(--mc-hover)] focus-visible:text-[color:var(--mc-text)] focus-visible:outline-none disabled:pointer-events-none disabled:opacity-35"
+      >
+        <Icon className="size-4" strokeWidth={1.8} />
+      </button>
+      <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 -translate-x-1/2 whitespace-nowrap rounded-sm bg-[color:var(--mc-panel)] px-2 py-1 font-mono text-[10px] text-[color:var(--mc-text)] opacity-0 shadow-lg ring-1 ring-[color:var(--mc-border)] transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
+        {label}
+      </span>
+    </div>
+  );
+}
+
 export function TopToolbar() {
   const locale = useEditorStore((state) => state.locale);
   const theme = useEditorStore((state) => state.theme);
@@ -218,15 +246,13 @@ export function TopToolbar() {
           { icon: Undo2, label: "Undo", onClick: undo, disabled: !canUndo },
           { icon: Redo2, label: "Redo", onClick: redo, disabled: !canRedo },
         ].map(({ icon: Icon, label, onClick, disabled }) => (
-          <button
+          <ToolbarIconButton
             key={label}
-            title={getCopy(locale, `toolbar.${label.toLowerCase()}`)}
+            label={getCopy(locale, `toolbar.${label.toLowerCase()}`)}
+            icon={Icon}
             onClick={onClick}
             disabled={disabled}
-            className="flex size-8 items-center justify-center rounded-sm text-[color:var(--mc-text-muted)] transition-colors hover:bg-[color:var(--mc-hover)] hover:text-[color:var(--mc-text)] disabled:pointer-events-none disabled:opacity-35"
-          >
-            <Icon className="size-4" strokeWidth={1.8} />
-          </button>
+          />
         ))}
       </div>
 
@@ -239,14 +265,12 @@ export function TopToolbar() {
           { icon: Save, label: "save", onClick: handleProjectSaveClick },
           { icon: Upload, label: "import", onClick: handleImportClick },
         ].map(({ icon: Icon, label, onClick }) => (
-          <button
+          <ToolbarIconButton
             key={label}
-            title={getCopy(locale, `toolbar.${label}`)}
+            label={getCopy(locale, `toolbar.${label}`)}
+            icon={Icon}
             onClick={onClick}
-            className="flex size-8 items-center justify-center rounded-sm text-[color:var(--mc-text-muted)] transition-colors hover:bg-[color:var(--mc-hover)] hover:text-[color:var(--mc-text)]"
-          >
-            <Icon className="size-4" strokeWidth={1.8} />
-          </button>
+          />
         ))}
       </div>
 
