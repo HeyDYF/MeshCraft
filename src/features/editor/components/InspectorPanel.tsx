@@ -1,5 +1,6 @@
 import {
   ChevronDown,
+  Cpu,
   Eye,
   Gauge,
   Info,
@@ -11,6 +12,7 @@ import {
   Upload,
 } from "lucide-react";
 import { useRef, useState, type ChangeEvent, type ReactNode } from "react";
+import { deriveAnalyzeSummary } from "../lib/analyze-mode";
 import { getSelectionCapabilities } from "../lib/editor-bindings";
 import { readFileAsDataUrl } from "../lib/import-file";
 import { isSupportedTextureFile } from "../lib/texture-overrides";
@@ -461,11 +463,45 @@ function PerformanceSection() {
   );
 }
 
+function AnalyzeSceneSection() {
+  const sceneTree = useEditorStore((state) => state.sceneTree);
+  const selectedId = useEditorStore((state) => state.selectedId);
+  const activeMaterialId = useEditorStore((state) => state.activeMaterialId);
+  const locale = useEditorStore((state) => state.locale);
+  const summary = deriveAnalyzeSummary(sceneTree, selectedId, activeMaterialId);
+
+  return (
+    <div className="grid grid-cols-2 gap-2">
+      {[
+        { label: getCopy(locale, "inspector.totalNodes"), value: summary.scene.totalNodes.toLocaleString() },
+        { label: getCopy(locale, "inspector.groups"), value: summary.scene.groups.toLocaleString() },
+        { label: getCopy(locale, "inspector.meshes"), value: summary.scene.meshes.toLocaleString() },
+        { label: getCopy(locale, "inspector.materialsCount"), value: summary.scene.materials.toLocaleString() },
+        { label: getCopy(locale, "inspector.texturesCount"), value: summary.scene.textures.toLocaleString() },
+        { label: getCopy(locale, "inspector.lights"), value: summary.scene.lights.toLocaleString() },
+        { label: getCopy(locale, "inspector.cameras"), value: summary.scene.cameras.toLocaleString() },
+        { label: getCopy(locale, "inspector.sceneTriangles"), value: summary.scene.totalTriangles.toLocaleString() },
+      ].map((item) => (
+        <div key={item.label} className="rounded-sm bg-black/20 px-2 py-2 ring-1 ring-white/10">
+          <div className="text-[11px] uppercase tracking-wide text-slate-600">
+            {item.label}
+          </div>
+          <div className="mt-1 font-mono text-[12px] text-slate-100">{item.value}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function SelectionSection() {
   const selectedName = useEditorStore((state) => state.selectedName);
   const selectedId = useEditorStore((state) => state.selectedId);
   const activeMaterialId = useEditorStore((state) => state.activeMaterialId);
+  const sceneTree = useEditorStore((state) => state.sceneTree);
+  const mode = useEditorStore((state) => state.mode);
   const locale = useEditorStore((state) => state.locale);
+  const summary = deriveAnalyzeSummary(sceneTree, selectedId, activeMaterialId);
+  const pathLabel = summary.selection.path.join(" / ");
 
   return (
     <div className="space-y-2 rounded-sm bg-black/20 px-3 py-3 ring-1 ring-white/10">
@@ -480,12 +516,41 @@ function SelectionSection() {
           {activeMaterialId ?? getCopy(locale, "inspector.importedUnbound")}
         </span>
       </div>
+      {mode === "analyze" && (
+        <>
+          <div className="pt-1 text-[12px] text-slate-500">
+            {getCopy(locale, "inspector.nodeKind")}:{" "}
+            <span className="font-mono text-[12px] text-slate-300">
+              {summary.selection.kind ?? getCopy(locale, "inspector.unresolved")}
+            </span>
+          </div>
+          <div className="text-[12px] text-slate-500">
+            {getCopy(locale, "inspector.childNodes")}:{" "}
+            <span className="font-mono text-[12px] text-slate-300">
+              {summary.selection.childCount.toLocaleString()}
+            </span>
+          </div>
+          <div className="text-[12px] text-slate-500">
+            {getCopy(locale, "inspector.selectionTriangles")}:{" "}
+            <span className="font-mono text-[12px] text-slate-300">
+              {summary.selection.triangles?.toLocaleString() ?? "0"}
+            </span>
+          </div>
+          <div className="pt-1 text-[11px] uppercase tracking-wide text-slate-600">
+            {getCopy(locale, "inspector.scenePath")}
+          </div>
+          <div className="font-mono text-[11px] leading-relaxed text-slate-400">
+            {pathLabel || getCopy(locale, "inspector.unresolved")}
+          </div>
+        </>
+      )}
     </div>
   );
 }
 
 export function InspectorPanel() {
   const locale = useEditorStore((state) => state.locale);
+  const mode = useEditorStore((state) => state.mode);
   const selectedName = useEditorStore((state) => state.selectedName);
   const selectedId = useEditorStore((state) => state.selectedId);
   const transform = useEditorStore((state) => state.transform);
@@ -520,6 +585,12 @@ export function InspectorPanel() {
           {getCopy(locale, "inspector.inspector")}
         </span>
       </div>
+
+      {mode === "analyze" && (
+        <Section title="Analyze" icon={Cpu} defaultOpen>
+          <AnalyzeSceneSection />
+        </Section>
+      )}
 
       <Section title="Transform" icon={Move}>
         <TransformSection transform={transform} />
