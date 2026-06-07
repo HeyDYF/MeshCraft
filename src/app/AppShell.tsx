@@ -11,6 +11,7 @@ import { InspectorPanel } from "../features/editor/components/InspectorPanel";
 import { ScenePanel } from "../features/editor/components/ScenePanel";
 import { StatusBar } from "../features/editor/components/StatusBar";
 import { TopToolbar } from "../features/editor/components/TopToolbar";
+import { confirmUnsavedChangesAction } from "../features/editor/lib/unsaved-changes";
 import { useEditorStore } from "../features/editor/store/editor-store";
 import { SceneCanvas } from "../features/viewport/components/SceneCanvas";
 
@@ -69,6 +70,10 @@ export function AppShell() {
   async function handleDrop(event: DragEvent<HTMLDivElement>) {
     event.preventDefault();
     setDragActive(false);
+
+    if (!confirmUnsavedChangesAction(hasUnsavedChanges, "import a new asset")) {
+      return;
+    }
 
     const files = Array.from(event.dataTransfer.files);
     const nextFile = pickImportFile(files);

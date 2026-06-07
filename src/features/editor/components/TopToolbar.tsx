@@ -18,6 +18,7 @@ import {
   createProjectSnapshot,
   parseProjectSnapshot,
 } from "../lib/project-snapshot";
+import { confirmUnsavedChangesAction } from "../lib/unsaved-changes";
 import { useEditorStore } from "../store/editor-store";
 import type { EditorMode } from "../types";
 
@@ -73,18 +74,23 @@ export function TopToolbar() {
   );
 
   function handleImportClick() {
+    if (!confirmUnsavedChangesAction(hasUnsavedChanges, "import a new asset")) {
+      return;
+    }
+
     inputRef.current?.click();
   }
 
   function handleProjectOpenClick() {
+    if (!confirmUnsavedChangesAction(hasUnsavedChanges, "open another project")) {
+      return;
+    }
+
     projectInputRef.current?.click();
   }
 
   function handleNewProjectClick() {
-    if (
-      hasUnsavedChanges &&
-      !window.confirm("Discard unsaved changes and start a new MeshCraft project?")
-    ) {
+    if (!confirmUnsavedChangesAction(hasUnsavedChanges, "new project")) {
       return;
     }
 
@@ -259,7 +265,18 @@ export function TopToolbar() {
         </div>
         {importedAssetName && (
           <button
-            onClick={clearImportedAsset}
+            onClick={() => {
+              if (
+                !confirmUnsavedChangesAction(
+                  hasUnsavedChanges,
+                  "unload the imported asset",
+                )
+              ) {
+                return;
+              }
+
+              clearImportedAsset();
+            }}
             className="max-w-[180px] truncate rounded-sm bg-black/20 px-2 py-1 font-mono text-[11px] text-cyan-300 ring-1 ring-white/10"
             title="Unload imported asset"
           >
